@@ -1,0 +1,224 @@
+{
+    "current_scope": "권리주체_행위능력",
+    "topics": {
+        "민법서론_OT": {
+            "status": "완료",
+            "started": "2026-01-16",
+            "completed": "2026-01-21"
+        },
+        "권리주체_태아권리능력": {
+            "status": "완료",
+            "started": "2026-01-21",
+            "completed": "2026-01-21",
+            "score": "7/7"
+        },
+        "민법서론_법원신의칙": {
+            "status": "완료",
+            "started": "2026-01-21",
+            "completed": "2026-01-21",
+            "score": "10/12"
+        },
+        "권리주체_행위능력": {
+            "status": "진행중",
+            "started": "2026-01-21",
+            "progress": "Q40/Q50",
+            "score": "20/22"
+        }
+    },
+    "weak_points": [
+        "권리남용 요건 (주관+객관)",
+        "강행법규 위반 무효 주장",
+        "성년후견인 당연 법정대리인",
+        "특정후견 행위능력 무영향",
+        "이중매매 권리구제 경합(선택적 행사)",
+        "채권자대위권 무자력 예외 및 제746조 배제",
+        "채권자취소권 특정채권 보전 불가 (98다56690)",
+        "이행불능 제103조 무효 시 대상청구권 부정 (92다4581)",
+        "민법/가등기담보법에 의한 규율",
+        "민법/강박에 의한 의사표시를 다투는 방법",
+        "민법/경개"
+    ],
+    "srs": {
+        "items": [
+            {
+                "id": 1,
+                "content": "권리남용 요건 (주관+객관)",
+                "topic": "권리주체_행위능력",
+                "ef": 2.5,
+                "interval": 1,
+                "repetitions": 0,
+                "next_review": "2026-07-07",
+                "created": "2026-07-07",
+                "priority": "high",
+                "source": "weak_points",
+                "subject": "민법"
+            },
+            {
+                "id": 2,
+                "content": "강행법규 위반 무효 주장",
+                "topic": "권리주체_행위능력",
+                "ef": 2.5,
+                "interval": 1,
+                "repetitions": 0,
+                "next_review": "2026-07-07",
+                "created": "2026-07-07",
+                "priority": "high",
+                "source": "weak_points",
+                "subject": "민법"
+            },
+            {
+                "id": 3,
+                "content": "성년후견인 당연 법정대리인",
+                "topic": "권리주체_행위능력",
+                "ef": 2.5,
+                "interval": 1,
+                "repetitions": 0,
+                "next_review": "2026-07-07",
+                "created": "2026-07-07",
+                "priority": "high",
+                "source": "weak_points",
+                "subject": "민법"
+            },
+            {
+                "id": 4,
+                "content": "특정후견 행위능력 무영향",
+                "topic": "권리주체_행위능력",
+                "ef": 2.5,
+                "interval": 1,
+                "repetitions": 0,
+                "next_review": "2026-07-07",
+                "created": "2026-07-07",
+                "priority": "high",
+                "source": "weak_points",
+                "subject": "민법"
+            },
+            {
+                "id": 5,
+                "content": "이중매매 권리구제 경합(선택적 행사)",
+                "topic": "권리주체_행위능력",
+                "ef": 2.5,
+                "interval": 1,
+                "repetitions": 0,
+                "next_review": "2026-07-07",
+                "created": "2026-07-07",
+                "priority": "high",
+                "source": "weak_points",
+                "subject": "민법"
+            },
+            {
+                "id": 6,
+                "content": "채권자대위권 무자력 예외 및 제746조 배제",
+                "topic": "권리주체_행위능력",
+                "ef": 2.5,
+                "interval": 1,
+                "repetitions": 0,
+                "next_review": "2026-07-07",
+                "created": "2026-07-07",
+                "priority": "high",
+                "source": "weak_points",
+                "subject": "민법"
+            },
+            {
+                "id": 7,
+                "content": "채권자취소권 특정채권 보전 불가 (98다56690)",
+                "topic": "권리주체_행위능력",
+                "ef": 2.5,
+                "interval": 1,
+                "repetitions": 0,
+                "next_review": "2026-07-07",
+                "created": "2026-07-07",
+                "priority": "high",
+                "source": "weak_points",
+                "subject": "민법"
+            },
+            {
+                "id": 8,
+                "content": "이행불능 제103조 무효 시 대상청구권 부정 (92다4581)",
+                "topic": "권리주체_행위능력",
+                "ef": 2.5,
+                "interval": 1,
+                "repetitions": 0,
+                "next_review": "2026-07-07",
+                "created": "2026-07-07",
+                "priority": "high",
+                "source": "weak_points",
+                "subject": "민법"
+            },
+            {
+                "id": 9,
+                "content": "민법/가등기담보법에 의한 규율",
+                "topic": "권리주체_행위능력",
+                "ef": 2.5,
+                "interval": 1,
+                "repetitions": 0,
+                "next_review": "2026-07-07",
+                "created": "2026-07-07",
+                "priority": "high",
+                "source": "weak_points",
+                "subject": "민법"
+            },
+            {
+                "id": 10,
+                "content": "민법/강박에 의한 의사표시를 다투는 방법",
+                "topic": "권리주체_행위능력",
+                "ef": 2.5,
+                "interval": 1,
+                "repetitions": 0,
+                "next_review": "2026-07-07",
+                "created": "2026-07-07",
+                "priority": "high",
+                "source": "weak_points",
+                "subject": "민법"
+            },
+            {
+                "id": 11,
+                "content": "민법/경개",
+                "topic": "권리주체_행위능력",
+                "ef": 2.5,
+                "interval": 1,
+                "repetitions": 0,
+                "next_review": "2026-07-07",
+                "created": "2026-07-07",
+                "priority": "high",
+                "source": "weak_points",
+                "subject": "민법"
+            }
+        ]
+    },
+    "last_session": "2026-07-07",
+    "exams": [
+        {
+            "name": "방학_2026",
+            "date": "2026-08-24",
+            "subjects": "all"
+        },
+        {
+            "name": "내신_2-2",
+            "date": "2026-10-19",
+            "subjects": "all"
+        },
+        {
+            "name": "변시",
+            "date": "2029-01-13",
+            "subjects": "all"
+        }
+    ],
+    "retention_factors": {
+        "_default": 1.0,
+        "_doc": "S4 과목별 가중(2026-07-05 활성화): interval 승수 + 오늘목록 정렬 가중. 낮을수록 자주 복습·우선 노출. 조정은 이 값만 바꾸면 됨.",
+        "민법": 0.85,
+        "민사소송법": 0.85,
+        "형법": 0.9,
+        "형사소송법": 0.9,
+        "헌법": 1.0,
+        "행정법": 1.0,
+        "상법": 1.0,
+        "선택법": 1.0,
+        "민사집행법": 1.0
+    },
+    "daily_question_budget": 50,
+    "l0_capacity": 4,
+    "questions_per_topic": 8,
+    "l0_questions_per_topic": 5,
+    "_budget_doc": "P0-1(2026-07-14) 일일 문항 예산·L0 정원 정본(수치 산재 금지, 채점복습.md #52-C). daily_question_budget=일 총 문항 상한 / l0_capacity=L0 필수복습 논점 정원(초과분 l0_carryover.json 익일 이월) / questions_per_topic=진도·복습 논점당 추정 문항 / l0_questions_per_topic=L0 논점당 추정 문항. build_session.py budget_config가 읽음(미설정 시 코드 기본값 폴백). 과부하→완주실패 차단용, 값만 수정."
+}

@@ -1,0 +1,4 @@
+{"ts": "2026-07-07 23:51", "kind": "add_dup", "id": 12, "content": "임시테스트_결선검증"}
+{"ts": "2026-07-07 23:51", "kind": "review", "id": 12, "content": "임시테스트_결선검증", "score": 5, "new_session": true, "sessions_ok": 1}
+{"ts": "2026-07-07 23:51", "kind": "review", "id": 12, "content": "임시테스트_결선검증", "score": 5, "new_session": false, "sessions_ok": 1}
+{"ts": "2026-07-14 07:23", "kind": "add_dup", "id": 1, "content": "테스트 쟁점 A", "review_type": "issue_spotting"}

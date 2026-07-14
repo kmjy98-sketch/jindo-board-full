@@ -1,0 +1,10 @@
+# 파이썬
+__pycache__/
+*.pyc
+*_bak_*.py
+
+# OS / 에디터
+.DS_Store
+Thumbs.db
+desktop.ini
+.obsidian/

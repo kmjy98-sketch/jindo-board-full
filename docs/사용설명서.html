@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>진도 보드 사용설명서</title>
+<style>
+  @page { size: A4; margin: 14mm 14mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+    color: #1a1a1a; line-height: 1.6; font-size: 11pt;
+    background: #fff;
+  }
+  .page { page-break-after: always; padding-bottom: 6mm; }
+  .page:last-child { page-break-after: auto; }
+
+  /* 표지 */
+  .cover { text-align: center; padding-top: 55mm; }
+  .cover .badge { display: inline-block; background: #1D9E75; color: #fff;
+    padding: 4px 14px; border-radius: 999px; font-size: 10pt; font-weight: 600; letter-spacing: .5px; }
+  .cover h1 { font-size: 34pt; font-weight: 800; margin: 18px 0 6px; letter-spacing: -1px; }
+  .cover .sub { font-size: 13pt; color: #6b6a64; margin-bottom: 40px; }
+  .cover .tagline { font-size: 12pt; color: #1a1a1a; max-width: 130mm; margin: 0 auto;
+    background: #f4f9f6; border: 1px solid #d6e9e1; border-radius: 12px; padding: 18px 22px; }
+  .cover .tagline b { color: #1D9E75; }
+  .cover .foot { margin-top: 50mm; font-size: 9pt; color: #9a9a94; }
+
+  h2 { font-size: 18pt; font-weight: 700; color: #1D9E75; margin: 0 0 4px;
+    display: flex; align-items: center; gap: 10px; }
+  h2 .num { background: #1D9E75; color: #fff; width: 30px; height: 30px; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 14pt; flex: 0 0 auto; }
+  .lead { color: #6b6a64; margin: 0 0 16px 40px; font-size: 10.5pt; }
+
+  .step { display: flex; gap: 14px; margin: 0 0 14px; align-items: flex-start; }
+  .step .n { flex: 0 0 26px; height: 26px; border-radius: 50%; background: #1D9E75; color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11pt; margin-top: 2px; }
+  .step .body { flex: 1; }
+  .step .body b { font-size: 11.5pt; }
+  .step .body .desc { color: #555; font-size: 10pt; margin-top: 2px; }
+
+  .card { border: 1px solid #e6e3da; border-radius: 12px; padding: 14px 18px; margin: 12px 0; }
+  .card.accent { border-color: #1D9E75; background: #f4f9f6; }
+  .card.warn { border-color: #e0b34d; background: #fdf7ea; }
+  .card h3 { font-size: 11.5pt; margin-bottom: 6px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10pt; }
+  th, td { border: 1px solid #e6e3da; padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: #f4f9f6; color: #1a1a1a; font-weight: 700; }
+  td.k { color: #1D9E75; font-weight: 600; white-space: nowrap; }
+
+  code { font-family: 'Consolas', monospace; background: #f2f1ec; padding: 1px 5px; border-radius: 4px; font-size: 9.5pt; }
+  pre { background: #191919; color: #ececec; border-radius: 10px; padding: 14px 16px; font-size: 9pt;
+    font-family: 'Consolas', monospace; line-height: 1.5; overflow-x: auto; margin: 10px 0; }
+  pre .c { color: #7fd4b0; }
+  pre .g { color: #a3a39c; }
+
+  .mock { border: 1px solid #e6e3da; border-radius: 12px; overflow: hidden; margin: 12px 0; }
+  .mock .bar { background: #f4f9f6; border-bottom: 1px solid #e6e3da; padding: 8px 14px; font-weight: 700; font-size: 10.5pt; }
+  .mock .tabs { padding: 10px 14px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .mock .tab { border: 1px solid #e6e3da; border-radius: 999px; padding: 4px 12px; font-size: 9.5pt; }
+  .mock .tab.on { background: #1D9E75; color: #fff; border-color: #1D9E75; }
+  .mock .grid { padding: 4px 14px 14px; }
+  .mock .row { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-top: 1px solid #f0efe9; }
+  .mock .ax { flex: 0 0 90px; font-weight: 600; font-size: 9.5pt; }
+  .mock .cells { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mock .cell { border: 1px solid #e6e3da; border-radius: 6px; padding: 4px 9px; font-size: 9pt; }
+  .mock .cell.r2 { background: #97C459; border-color: #97C459; color: #173404; }
+  .mock .cell.r1 { background: #C0DD97; border-color: #C0DD97; color: #173404; }
+
+  ul.clean { list-style: none; margin: 8px 0 8px 40px; }
+  ul.clean li { position: relative; padding-left: 18px; margin: 5px 0; font-size: 10.5pt; }
+  ul.clean li:before { content: "▸"; position: absolute; left: 0; color: #1D9E75; }
+
+  .flow { display: flex; align-items: center; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
+  .flow .box { border: 1px solid #1D9E75; background: #f4f9f6; border-radius: 8px; padding: 8px 12px;
+    font-size: 9.5pt; text-align: center; }
+  .flow .arr { color: #1D9E75; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- 표지 -->
+<div class="page cover">
+  <div class="badge">JINDO BOARD</div>
+  <h1>진도 보드</h1>
+  <div class="sub">법학 시험 대비 논점 진도 관리 보드 · 사용설명서</div>
+  <div class="tagline">
+    서버도, 설치도, 로그인도 없이 <b>HTML 파일 하나</b>로.<br>
+    여러분의 진도 데이터는 <b>여러분 컴퓨터를 떠나지 않습니다.</b>
+  </div>
+  <div class="foot">v9 · 2026-07 · github.com/kmjy98-sketch/jindo-board</div>
+</div>
+
+<!-- 1. 이게 뭔가요 -->
+<div class="page">
+  <h2><span class="num">1</span>이게 뭔가요?</h2>
+  <p class="lead">법학 공부는 "챕터"가 아니라 논점(쟁점) 단위로 돌아갑니다.</p>
+
+  <p style="margin: 0 0 12px;">이 보드는 논점 하나하나의 진행도를 <b>클릭</b>으로 관리합니다.
+  그리고 그 기록을 클라우드가 아니라 <b>여러분 폴더 안의 마크다운 파일에 직접</b> 씁니다.</p>
+
+  <div class="flow">
+    <span class="box">셀 클릭</span>
+    <span class="arr">→</span>
+    <span class="box">논점 .md 파일<br>frontmatter 갱신</span>
+    <span class="arr">→</span>
+    <span class="box">옵시디언·다른 도구도<br>같은 파일을 읽음</span>
+  </div>
+
+  <div class="card accent">
+    <h3>✔ 왜 이 방식인가</h3>
+    <ul class="clean" style="margin-left: 0;">
+      <li><b>내 데이터는 내 것</b> — 계정 없음, 서버 없음. 파일은 내 디스크에만</li>
+      <li><b>브라우저를 바꿔도 이어짐</b> — 기록이 브라우저가 아니라 파일에 있으니까</li>
+      <li><b>기존 도구와 함께</b> — 옵시디언 볼트 안에 그대로 두고 Bases로도 열람</li>
+    </ul>
+  </div>
+
+  <div class="card warn">
+    <h3>⚠ 한 가지 조건</h3>
+    <b>크롬 또는 엣지</b>에서 여세요. 이 두 브라우저에만 있는 기능(File System Access API)으로
+    폴더에 직접 씁니다. 파이어폭스·사파리, 그리고 일부 앱 내장 브라우저는 로컬 쓰기를 지원하지 않습니다.
+  </div>
+</div>
+
+<!-- 2. 3분 시작 -->
+<div class="page">
+  <h2><span class="num">2</span>3분 만에 시작</h2>
+  <p class="lead">처음이라면 동봉된 <code>sample-vault</code> 폴더로 바로 체험할 수 있습니다.</p>
+
+  <div class="step"><span class="n">1</span><div class="body">
+    <b>다운로드 · 압축 해제</b>
+    <div class="desc">GitHub에서 ZIP을 받아 원하는 위치에 풉니다.</div>
+  </div></div>
+
+  <div class="step"><span class="n">2</span><div class="body">
+    <b>진도_board.html 더블클릭</b>
+    <div class="desc">크롬·엣지가 기본 브라우저가 아니면, 파일 우클릭 → "연결 프로그램" → 크롬/엣지를 고릅니다.</div>
+  </div></div>
+
+  <div class="step"><span class="n">3</span><div class="body">
+    <b>[볼트 연결] 클릭 → 공부 폴더 선택 → "허용"</b>
+    <div class="desc">처음엔 <code>sample-vault</code> 폴더를 고르면 예시 논점이 바로 뜹니다.
+    내 걸 쓰려면 다음 장의 폴더 구조대로 만든 폴더를 고르세요.</div>
+  </div></div>
+
+  <div class="step"><span class="n">4</span><div class="body">
+    <b>셀을 클릭하면 회독 +1</b>
+    <div class="desc">Shift-클릭 또는 우클릭 = −1. 클릭하는 순간 해당 논점 .md 파일에 저장됩니다. 저장 버튼 없음.</div>
+  </div></div>
+
+  <div class="card warn" style="margin-top: 18px;">
+    <h3>⚠ "읽기 전용"이라고 뜨면</h3>
+    상단 <b>[쓰기 허용]</b> 버튼을 누르고, 브라우저가 물으면 "변경 허용"을 선택하세요.
+    그래도 안 되면 앱 내장 브라우저가 아니라 <b>일반 크롬·엣지 창</b>에서 열었는지 확인하세요.
+  </div>
+</div>
+
+<!-- 3. 폴더와 파일 -->
+<div class="page">
+  <h2><span class="num">3</span>폴더 구조와 논점 파일</h2>
+  <p class="lead">규칙은 딱 두 가지: 폴더 위치와 파일 맨 위 frontmatter.</p>
+
+  <h3 style="margin: 6px 0;">폴더 구조</h3>
+  <p style="font-size: 10pt; margin-bottom: 4px;">연결하는 폴더 안에 <code>sync/위키/{과목}/</code> 구조만 있으면 됩니다.
+  목표·로그 폴더는 자동으로 생깁니다.</p>
+  <pre><span class="g">내볼트/</span>
+└─ sync/
+   └─ 위키/
+      ├─ <span class="c">민법</span>/                  <span class="g">← 과목 폴더</span>
+      │   ├─ 채권자대위권.md
+      │   └─ …
+      ├─ <span class="c">형법총론</span>/
+      └─ …</pre>
+
+  <p style="font-size: 9.5pt; color: #555; margin: 6px 0 14px;">
+  <b>인식 과목명(고정):</b> 민법 · 형법총론 · 형법각론 · 헌법 · 민사소송법 · 민사집행법 · 행정법 · 형사소송법 · 상법 · 선택법</p>
+
+  <h3 style="margin: 6px 0;">논점 파일 (파일 1개 = 논점 1개)</h3>
+  <p style="font-size: 10pt; margin-bottom: 4px;"><b>파일명이 곧 보드 셀 이름</b>입니다. 본문은 자유(비워도 OK).</p>
+  <pre><span class="g">---</span>
+type: 쟁점          <span class="g"># 이게 있는 파일만 보드에 뜸</span>
+과목: 민법
+대분류: 채권법        <span class="g"># 보드의 가로줄 묶음</span>
+논점: 01            <span class="g"># 묶음 안 정렬 번호</span>
+회독: 0             <span class="g"># ↓ 4개는 클릭으로 자동 갱신</span>
+선택: 0
+사례: 0
+기록: 0
+약점: false
+진도: 미착수
+<span class="g">---</span>
+
+<span class="c"># 채권자대위권</span>
+(본문 자유)</pre>
+</div>
+
+<!-- 4. 보드 사용 -->
+<div class="page">
+  <h2><span class="num">4</span>보드 사용법</h2>
+  <p class="lead">기록 모드를 고르고, 목표 기간을 정하고, 클릭합니다.</p>
+
+  <div class="mock">
+    <div class="bar">진도 보드 v9</div>
+    <div class="tabs">
+      <span class="tab on">당장: 1학년 여름</span>
+      <span class="tab">기간 목표</span>
+      <span class="tab">전체</span>
+      <span style="width:1px;background:#e6e3da;margin:0 4px;"></span>
+      <span class="tab on">회독</span><span class="tab">선택</span><span class="tab">사례</span><span class="tab">기록</span>
+    </div>
+    <div class="grid">
+      <div class="row"><div class="ax">책임재산 보전</div><div class="cells">
+        <span class="cell r2">채권자대위권 2회</span><span class="cell r1">채권자취소권 1회</span></div></div>
+      <div class="row"><div class="ax">법정채권</div><div class="cells">
+        <span class="cell r1">부당이득 1회 사2</span><span class="cell">불법행위</span></div></div>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>기능</th><th>방법</th></tr>
+    <tr><td class="k">기록 모드</td><td>상단 [회독][선택][사례][기록] 중 선택 후 셀 클릭 = +1</td></tr>
+    <tr><td class="k">4종 트랙</td><td>회독 / 선택형 / 사례형 / 기록형을 각각 따로 카운트</td></tr>
+    <tr><td class="k">탭</td><td><b>당장 목표</b>(지금 하는 기간) · <b>기간 목표</b>(12기간) · <b>전체</b></td></tr>
+    <tr><td class="k">백업</td><td>[JSON 내보내기]로 파일 저장</td></tr>
+  </table>
+
+  <div class="card accent">
+    <h3>🎨 색으로 보는 진행도</h3>
+    회독 횟수가 늘수록 셀 색이 <b>연한 초록 → 진한 초록</b>으로 짙어집니다.
+    한눈에 "덜 본 논점(흰색·연한 색)"이 드러나 어디를 더 봐야 할지 바로 보입니다.
+  </div>
+</div>
+
+<!-- 5. 기간 목표 -->
+<div class="page">
+  <h2><span class="num">5</span>기간 목표 — "지금 하는 것"에 집중</h2>
+  <p class="lead">1년을 학기·방학 12기간으로 나누고, 지금 하는 기간을 [당장 목표]로 고정합니다.</p>
+
+  <div class="flow">
+    <span class="box">1-1 학기</span><span class="arr">→</span>
+    <span class="box">1학년 여름</span><span class="arr">→</span>
+    <span class="box">1-2 학기</span><span class="arr">→</span>
+    <span class="box">1학년 겨울</span><span class="arr">→</span>
+    <span class="box" style="border-color:#c8c8c0;color:#9a9a94;">…</span>
+  </div>
+
+  <div class="step"><span class="n">1</span><div class="body">
+    <b>[기간 목표] 탭에서 기간을 고릅니다</b>
+    <div class="desc">예: "1학년 여름"</div>
+  </div></div>
+  <div class="step"><span class="n">2</span><div class="body">
+    <b>[단원 편집]을 켜고 이번 기간에 할 논점을 담습니다</b>
+    <div class="desc">셀 하나씩, 또는 과목 헤더·중분류 라벨을 클릭하면 그 전체를 한 번에 담습니다.</div>
+  </div></div>
+  <div class="step"><span class="n">3</span><div class="body">
+    <b>[현재로 지정]을 누릅니다</b>
+    <div class="desc">그 기간이 ★로 표시되고, [당장 목표] 탭이 그 기간을 가리킵니다. 부팅하면 바로 이 화면이 뜹니다.</div>
+  </div></div>
+
+  <div class="card accent">
+    <h3>📐 학기는 중간·기말까지 쪼개기</h3>
+    학기 기간을 고르면 <b>[학기 전체 | 중간 | 기말]</b> 범위 토글이 나옵니다.
+    중간고사 범위, 기말고사 범위를 따로 담을 수 있고,
+    중간·기말에 담은 논점은 자동으로 "학기 전체"에도 포함됩니다.
+    시험일도 학기별·중간/기말별로 나눠 관리됩니다.
+  </div>
+</div>
+
+<!-- 6. 나눠주기 & 서버 -->
+<div class="page">
+  <h2><span class="num">6</span>스터디 공유 · 서버 모드 · FAQ</h2>
+
+  <h3 style="margin: 4px 0 6px; color:#1D9E75;">👥 스터디원에게 논점 목록 나눠주기</h3>
+  <p style="font-size: 10pt; margin-bottom: 4px;">정리된 논점 목록이 있으면, <b>진도 기록·본문을 뺀 뼈대만</b> 복제해 배포용 볼트를 만듭니다:</p>
+  <pre>python tools/make_skeleton.py <span class="c">"내볼트경로"</span> <span class="c">"출력폴더"</span></pre>
+
+  <h3 style="margin: 14px 0 6px; color:#1D9E75;">🖥️ (선택) 서버 모드</h3>
+  <p style="font-size: 10pt; margin-bottom: 4px;">볼트 직결로 충분하면 필요 없습니다. 원하면 파이썬 로컬 서버로도 같은 보드를 엽니다(포트 8770).</p>
+  <pre>python server/board_server_v2.py    <span class="g"># 파이썬 3.10+</span></pre>
+
+  <h3 style="margin: 14px 0 6px; color:#1D9E75;">❓ 자주 묻는 것</h3>
+  <table>
+    <tr><td class="k">저장 어디에?</td><td>각 논점 .md 파일 + 볼트 안 <code>6.진도관리/백업/</code>(목표·로그, 자동 생성)</td></tr>
+    <tr><td class="k">컴퓨터 바꾸면?</td><td>폴더(볼트)만 옮기면 그대로. 새 PC에서 [볼트 연결] 한 번만</td></tr>
+    <tr><td class="k">읽기 전용?</td><td>[쓰기 허용] 클릭. 안 되면 일반 크롬·엣지에서 열기</td></tr>
+    <tr><td class="k">폴더 다시 지정?</td><td>브라우저 사이트 권한 초기화 후 새로고침 → 다시 [볼트 연결]</td></tr>
+  </table>
+
+  <div class="card accent" style="margin-top: 16px; text-align:center;">
+    <b style="font-size:12pt;">github.com/kmjy98-sketch/jindo-board</b><br>
+    <span style="color:#6b6a64; font-size:10pt;">MIT 라이선스 · 자유롭게 쓰고 고쳐도 됩니다</span>
+  </div>
+</div>
+
+</body>
+</html>

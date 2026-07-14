@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>진도 보드 v7</title>
+<style>
+  :root{--bg:#faf9f6;--card:#fff;--line:#e6e3da;--tx:#1a1a1a;--mut:#6b6a64;--accent:#1D9E75}
+  @media (prefers-color-scheme:dark){:root{--bg:#191919;--card:#242422;--line:#37362f;--tx:#ececec;--mut:#a3a39c}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;line-height:1.55;padding:20px;max-width:1120px;margin:0 auto;font-size:14px}
+  h1{font-size:20px;font-weight:600;margin:0 0 8px}
+  .help,.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:12px;font-size:13px}
+  .help-h{cursor:pointer;font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .help-b{margin-top:8px;color:var(--mut)} .help-b ul{margin:0;padding-left:18px} .help-b li{margin:3px 0}
+  .box table{border-collapse:collapse;width:100%;margin:4px 0} .box td{border:1px solid var(--line);padding:4px 8px;font-size:12px;vertical-align:top} .box td:first-child{color:var(--mut);white-space:nowrap;width:150px}
+  .warn{color:#A32D2D}
+  .bar1{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .tab{padding:7px 15px;border-radius:999px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:13px}
+  .tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .sep{width:1px;height:22px;background:var(--line);margin:0 6px;display:inline-block;vertical-align:middle}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 16px;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  .stat b{font-size:18px;color:var(--accent)}
+  .stat .gbar{flex:1;min-width:100px;max-width:240px;height:10px;background:var(--line);border-radius:5px;overflow:hidden}
+  .stat .gf{height:100%;background:var(--accent);width:0;transition:width .15s}
+  #selCtrl{margin-bottom:10px;display:none} #selCtrl .b{padding:5px 11px}
+  .subj{font-size:16px;font-weight:600;margin:15px 0 2px;border-bottom:2px solid var(--accent);display:inline-block;padding-bottom:1px}
+  .mrow{display:flex;align-items:flex-start;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
+  .axis{flex:0 0 168px;font-size:13px;font-weight:600;padding-top:5px}
+  .axis small{display:block;font-weight:400;color:var(--mut);font-size:11px}
+  .cells{display:flex;flex-wrap:wrap;gap:5px;flex:1}
+  .cell{cursor:pointer;border-radius:6px;padding:5px 8px;font-size:12px;border:1px solid var(--line);background:var(--card);user-select:none;max-width:260px}
+  .cell b{font-weight:600;margin-left:5px}
+  .legend{display:flex;align-items:center;gap:5px;margin:16px 0 6px;font-size:11px;color:var(--mut);flex-wrap:wrap}
+  .lg{width:16px;height:16px;border-radius:4px;display:inline-block;border:1px solid rgba(0,0,0,.08)}
+  .btns{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  button.b{font:inherit;font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--tx);cursor:pointer}
+  button.b:hover{border-color:var(--accent)} button.b:disabled{opacity:.4;cursor:default}
+  button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .bulk{font-size:11px;font-weight:400;color:var(--accent)}
+</style>
+</head>
+<body>
+<h1>진도 보드 v7</h1>
+
+<div class="help">
+  <div class="help-h" onclick="toggleHelp()"><span>사용법</span><span id="helpTog" style="font-weight:400;color:var(--mut)">접기 ▾</span></div>
+  <div id="helpBody" class="help-b">
+    <ul>
+      <li><b>기록 모드</b> — [회독][선택][사례][기록]. 셀 클릭 = 현재 모드 +1, Shift·우클릭 = −1. 셀에 <b>N회 선N 사N 기N</b>.</li>
+      <li><b>탭</b> = [당장 목표](현재 기간, 부팅 기본) / [기간](학기·방학 12기간) / [전체]. 모두 같은 데이터를 거르는 렌즈(데이터 안 바뀜).</li>
+      <li><b>기간 구조</b> — 1년 = 학기·방학 교차 12기간(1-1 → 1학년 여름 → 1-2 → 1학년 겨울 → …). [기간]에서 고른 뒤 <b>[현재로 지정]</b> = 당장 목표. 학기 기간은 <b>[학기 전체|중간|기말]</b> 하위범위 지원(중간·기말에 담으면 학기 전체에 자동 포함).</li>
+      <li><b>단원 편집</b> — [단원 편집] 켜고 셀 클릭으로 담기. <b>큰 단위 담기</b>: 편집 중 <u>과목 헤더</u>/<u>중분류 라벨</u> 클릭 = 그 전체 일괄. [누적] = 전 기간 합산 보기(편집 불가).</li>
+      <li><b>저장·백업</b> — 자동 저장. [JSON 내보내기] → 6.진도관리/백업/. 상태 [저장 환경 보기].</li>
+      <li><b>열기 방식</b> — 더블클릭(크롬·엣지)이면 최초 1회 [볼트 연결]로 법학볼트 폴더 지정 → 이후 클릭이 논점 frontmatter에 직접 저장(서버·bat 불필요). 서버(bat)로 열어도 동일하게 저장됨.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="bar1">
+  <div id="tabs" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  <span class="sep"></span>
+  <span style="font-size:12px;color:var(--mut)">기록:</span>
+  <span id="modes" style="display:flex;gap:5px"></span>
+</div>
+
+<div id="selCtrl"></div>
+
+<div class="stat">
+  <span>대상 <b id="scope">0</b>단원</span>
+  <span>평균 <b id="avg">0.0</b>회독</span>
+  <span>완료율 <b id="pct">0%</b></span>
+  <span>선택 <b id="tsel">0</b></span>
+  <span>사례 <b id="tcas">0</b></span>
+  <span>기록 <b id="trec">0</b></span>
+  <div class="gbar"><div class="gf" id="gf"></div></div>
+  <span style="color:var(--mut);font-size:11px">최종 <span id="upd">—</span></span>
+</div>
+
+<div id="board"></div>
+
+<div class="legend"><span>회독</span><span id="legR"></span><span style="margin-left:10px">문제(선·사·기)</span><span id="legP"></span></div>
+<div class="btns">
+  <button class="b" onclick="exportXLSX()">엑셀 내보내기</button>
+  <button class="b" onclick="exportJSON()">JSON 내보내기</button>
+  <button class="b" onclick="document.getElementById('imp').click()">가져오기(JSON)</button>
+  <input type="file" id="imp" accept=".json" style="display:none" onchange="if(this.files[0])importFile(this.files[0])">
+  <button class="b" onclick="showStorage()">저장 환경 보기</button>
+  <button class="b" onclick="resetAll()">초기화</button>
+</div>
+<div id="storage" class="box" style="display:none"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const BOARD={
+ "민법":{"민법총설":["법원·법률관계","신의칙"],"권리주체·대리":["자연인(능력·태아·제한능력자)","부재자·실종","법인","비법인사단·종중","대리·복대리","표현대리","무권대리"],"법률행위":["목적(반사회·불공정·이중매매)","법률행위 해석","의사표시(비진의·통정·착오·사기강박)","부관(조건·기한)","무효·취소","기간","소멸시효·제척기간"],"채권관계(1)":["채권 유형(특정물·종류·금전·이자·선택)","계약 일반론","매매","임대차","도급·위임 등 전형계약","사무관리","부당이득","불법행위"],"채권관계(2)":["변제·대물변제","상계·공탁·경개·면제혼동","채무불이행·손해배상","계약 해제·해지","채권자지체·제3자 채권침해","채권자대위권","채권자취소권","채권양도·채무인수","다수당사자·보증","물적담보(저당·근저당·유치권·질권·비전형)"],"물권관계":["물권총설·물권적청구권","물권변동·등기","점유권","소유권(취득시효·공유)","용익물권(지상·지역·전세)"]},
+ "민사소송법":{"소송주체":["법원·관할","당사자·당사자적격","채권자대위소송","소송능력·대리인"],"제1심절차":["소송개시·소송요건","소의 이익","소송물","변론·심리(처분권·변론주의)","송달·기일","증거(자백·자유심증·문서)"],"소송종료":["당사자 종료(취하·포기·인낙·화해)","종국판결·기판력"],"복합·다수":["병합청구(병합·변경·반소·중간확인)","다수당사자(공동소송·참가·승계)"],"상소·재심":["항소","상고","항고·재항고","재심"],"특별절차":["소액사건","독촉(지급명령)"]},
+ "민사집행법":{"집행 이론":["총설","부동산집행","유체동산집행","채권·기타재산권 집행","가압류·가처분","(가)압류·가처분 효력","절차 상호관계"],"집행 논점":["보전처분과 실체법(통정허위·시효중단)","상계 유형별","담보물권 물상대위","근저당확정·공동근저당 배당","유치권(민집 91조5항)","임대차와 집행","경매와 부당이득","추심소송 중복제소"]},
+ "상법":{"총칙":["상법의 법원","상인(당연·의제·소상인)","상업사용인(지배인·경업피지)","상호·명의대여자책임","상업등기","영업양도"],"상행위":["상행위 특칙(상사시효·유치권·유질)","상사매매","상호계산·익명조합·합자조합","대리상·중개·위탁매매","운송·운송주선","공중접객·창고업","새 상행위(리스·가맹·팩토링)"],"회사법":["회사 통칙(1인회사·능력·회사법상의소·합병)","주식회사 설립","주식과 주주","주주총회","이사·이사회·대표이사","감사·감사위원회","신주발행·자본감소","사채","회계(준비금·이익배당)","조직개편(분할·교환이전·매도청구)","기타회사(유한·합명·합자·유한책임)"],"어음·수표":["어음수표행위·위조변조","어음수표 항변","발행·백지·인수지급보증","배서·선의취득","지급·상환청구","시효·이득상환·보증·특수수표"],"보험":["보험계약 통칙(고지·약관설명)","손해보험(피보험이익·보험자대위·책임보험)","인보험(생명·상해)","타인을 위한·타인의 보험"]},
+ "형법":{"형법총론":["구성요건(인과·고의·과실·부작위)","위법성","책임","미수","공범","죄수·경합","형벌론"],"형법각론":["생명·신체","자유·사생활","명예·신용·업무","재산죄","사회적 법익(공공·문서·통화)","국가적 법익(공무·사법)"],"특별형법":["도로·교통범죄","성폭법·아청법","폭처법·특가법·특경법·뇌물알선","부수법·여전법·정통망법·통비법"]},
+ "형사소송법":{"서론":["기본이론","소송주체","소송행위·소송조건"],"수사·공소":["수사 일반","체포·구속","대물적 강제처분(압수·수색·검증)","수사상 증거보전","수사 종결","공소제기"],"공판":["공판심리 범위","공판절차","특수 공판절차","재판"],"증거":["증거법 기본","위법수집증거배제","전문법칙","증거동의·탄핵증거","증명력"],"상소·특별":["상소 통칙","상소 각칙","비상구제(재심·비상상고)","특별절차"]},
+ "헌법":{"헌법총론":["헌법과 헌법학","기본원리·적용범위"],"기본권":["기본권총론","인간존엄·평등","인신의 자유","사생활영역","정신생활영역","경제생활영역","정치적 기본권","청구권적 기본권","사회적 기본권"],"통치구조":["대의제·권력분립","정당·선거","국회","대통령·행정부","법원·지방자치"],"헌법재판":["위헌법률심판","헌법소원","권한쟁의·탄핵·정당해산"]},
+ "행정법":{"행정법통론":["행정·통치행위","행정법(법원·법치행정·법원칙)","행정상 법률관계·개인적공권","특별권력관계·사인의 공법행위"],"행정작용법":["행정입법(법규명령·행정규칙)","행정행위 개념·종류","기속·재량·판단여지","행정행위 부관","행정행위 효력(공정력·선결문제)","행정행위 하자·하자승계","취소·철회·실효","그 밖의 행위형식(확약·계획·계약·사실행위·지도)"],"절차·정보공개":["행정절차(통지·의견·이유제시)","절차하자·인허가의제","정보공개","개인정보보호"],"의무이행확보":["행정대집행","이행강제금·직접강제·강제징수","즉시강제·행정조사","행정벌·과징금 등"],"행정구제":["국가배상(2조·5조)","손실보상","행정심판","취소소송 소송요건(대상·원고적격·소익·피고·제소기간)","취소소송 심리·판결·기속력","무효등·부작위위법확인","당사자소송·객관소송"],"행정조직":["행정조직·권한위임대리","지방자치법","공무원법"],"특별행정작용":["경찰행정","공물·급부행정","공용부담·수용","건설(건축·국토계획·환지)","환경·조세"]},
+ "선택법":{"선택법":["선택법"]}
+};
+const ALL=Object.keys(BOARD);
+const SEMS=["1-1","1-2","2-1","2-2","3-1","3-2"];   // 학기 기간(중간·기말 하위범위 지원)
+const PERIODS=[{id:"1-1",n:"1-1 학기"},{id:"여름1",n:"1학년 여름"},{id:"1-2",n:"1-2 학기"},{id:"겨울1",n:"1학년 겨울"},
+ {id:"2-1",n:"2-1 학기"},{id:"여름2",n:"2학년 여름"},{id:"2-2",n:"2-2 학기"},{id:"겨울2",n:"2학년 겨울"},
+ {id:"3-1",n:"3-1 학기"},{id:"여름3",n:"3학년 여름"},{id:"3-2",n:"3-2 학기"},{id:"겨울3",n:"3학년 겨울(변시직전)"}];
+const KEY="jindo2_state", SEL="jindo5_sel", CAS="jindo5_cas", REC="jindo5_rec";
+const NSKEY="jindo6_naesin_sem", BHUKEY="jindo7_banghak_units", PKEY="jindo9_goal";
+const VALID=new Set();for(const s in BOARD)for(const m in BOARD[s])BOARD[s][m].forEach(u=>VALID.add(s+"|"+m+"|"+u));
+function unitsOf(subj){let r=[];for(const m in BOARD[subj])BOARD[subj][m].forEach(u=>r.push(subj+"|"+m+"|"+u));return r;}
+let st=JSON.parse(localStorage.getItem(KEY)||"{}");
+let sel=JSON.parse(localStorage.getItem(SEL)||"{}");
+let cas=JSON.parse(localStorage.getItem(CAS)||localStorage.getItem("jindo4_problems")||"{}");
+let rec=JSON.parse(localStorage.getItem(REC)||"{}");
+const PROB={"선택":sel,"사례":cas,"기록":rec};
+const LKEY="jindo7_log";
+let log=JSON.parse(localStorage.getItem(LKEY)||"[]");
+// 기간 목표(v9): 1년=학기·방학 12기간, 학기는 중간·기말 하위범위. 정본은 진도보드_목표.json(hydrate로 유입), localStorage는 캐시.
+function emptyGoal(){const g={현재:null,기간별:{}};PERIODS.forEach(p=>g.기간별[p.id]={단원:[],중간:[],기말:[]});return g;}
+function migrateGoal(bang,nae){const g=emptyGoal();   // 구 스키마(방학_단원·내신_학기별) → 기간 이관
+ if(nae)for(const s in nae){if(g.기간별[s]&&Array.isArray(nae[s]))g.기간별[s].단원=nae[s].slice();}
+ if(Array.isArray(bang)&&bang.length){g.기간별["여름1"].단원=bang.slice();g.현재="여름1";}
+ return g;}
+function sanitizeGoal(g){const c=emptyGoal();const pend=[];
+ const take=(id,f,arr)=>{arr.forEach(k=>{if(VALID.has(k))c.기간별[id][f].push(k);else pend.push([id,f,k]);});};   // 미매칭 키는 버리지 않고 보류(스캔 실패·개명 시 목표 소실 방지)
+ if(g&&g.기간별)for(const id in c.기간별){const b=g.기간별[id]||{};["단원","중간","기말"].forEach(f=>take(id,f,Array.isArray(b[f])?b[f]:[]));}
+ (Array.isArray(g&&g._미매칭)?g._미매칭:[]).forEach(x=>{const[id,f,k]=x;   // 이전 보류분 복원 시도
+  if(c.기간별[id]&&VALID.has(k)){if(!c.기간별[id][f].includes(k))c.기간별[id][f].push(k);}else pend.push([id,f,k]);});
+ for(const id in c.기간별){const b=c.기간별[id];["단원","중간","기말"].forEach(f=>b[f]=[...new Set(b[f])]);
+  const u=new Set(b.단원);   // 중간·기말 ⊆ 단원 보장
+  b.중간.concat(b.기말).forEach(k=>{if(!u.has(k)){u.add(k);b.단원.push(k);}});}
+ c._미매칭=[...new Map(pend.map(x=>[x.join('|'),x])).values()];
+ c.현재=(g&&g.현재&&c.기간별[g.현재])?g.현재:null;return c;}
+let goalP=JSON.parse(localStorage.getItem(PKEY)||"null");
+goalP=goalP?sanitizeGoal(goalP):sanitizeGoal(migrateGoal(
+ JSON.parse(localStorage.getItem(BHUKEY)||"[]"), JSON.parse(localStorage.getItem(NSKEY)||"{}")));
+// 레거시 미러(드릴 build_session·구 백업 호환): 방학_단원=현재 기간 단원(=드릴 복습 스코프), 내신_학기별=학기 단원
+function legacyMirror(){const nae={};SEMS.forEach(s=>nae[s]=(goalP.기간별[s]||{단원:[]}).단원.slice());
+ return {내신_학기별:nae, 방학_단원:goalP.현재?goalP.기간별[goalP.현재].단원.slice():[...cumSet()]};}   // 현재 미지정 시 누적 폴백(드릴 스코프 공집합 방지)
+const TABS=["당장","기간","전체"];
+const COL=["","#C0DD97","#97C459","#639922","#3B6D11","#173404"];
+const COL2=["","#FAC775","#EF9F27","#BA7517","#854F0B","#633806"];
+let upd=localStorage.getItem(KEY+"_upd")||"—";
+let view="당장", mode="회독", curPid=null, curRange="단원", editing=false;
+
+function ptier(p){return p<=0?0:p<=2?1:p<=5?2:p<=10?3:p<=20?4:5;}
+function cumSet(){const u=new Set();PERIODS.forEach(p=>goalP.기간별[p.id].단원.forEach(k=>u.add(k)));return u;}
+function pname(pid){const p=PERIODS.find(x=>x.id==pid);return p?p.n:pid;}
+function dangLabel(){return goalP.현재?("당장: "+pname(goalP.현재)):"당장 목표";}
+// 활성 기간·범위 버킷
+function activePid(){return view=="당장"?goalP.현재:(view=="기간"?curPid:null);}
+function activeBucket(){const pid=activePid();if(!pid||pid=="누적")return null;const b=goalP.기간별[pid];if(!b)return null;
+ return (SEMS.includes(pid)&&curRange!="단원")?b[curRange]:b.단원;}
+// 현재 탭의 표시 집합(null=전체는 전부)
+function viewSet(){if(view=="전체")return null;
+ if(view=="기간"&&curPid=="누적")return cumSet();
+ const a=activeBucket();return a?new Set(a):new Set();}
+function editArr(){if(view!="당장"&&view!="기간")return null;if(view=="기간"&&curPid=="누적")return null;return activeBucket();}
+function isEdit(){return editing&&editArr()!=null;}
+function inSel(k){const a=editArr();return a?a.includes(k):false;}
+function saveSets(){localStorage.setItem(PKEY,JSON.stringify(goalP));}
+function toggleSel(k){const a=editArr();if(!a)return;const b=goalP.기간별[activePid()];const i=a.indexOf(k);
+ if(i>=0){a.splice(i,1);if(a===b.단원)[b.중간,b.기말].forEach(x=>{const j=x.indexOf(k);if(j>=0)x.splice(j,1);});}   // 단원에서 빼면 하위범위에서도 제거
+ else{a.push(k);if(a!==b.단원&&!b.단원.includes(k))b.단원.push(k);}                                                  // 하위범위에 담으면 단원에도 포함
+ saveSets();}
+function bulkSel(keys){const a=editArr();if(!a)return;const b=goalP.기간별[activePid()];
+ const set=new Set(a);const allIn=keys.every(k=>set.has(k));
+ keys.forEach(k=>{const i=a.indexOf(k);
+  if(allIn){if(i>=0){a.splice(i,1);if(a===b.단원)[b.중간,b.기말].forEach(x=>{const j=x.indexOf(k);if(j>=0)x.splice(j,1);});}}
+  else if(i<0){a.push(k);if(a!==b.단원&&!b.단원.includes(k))b.단원.push(k);}});
+ saveSets();}
+
+const legR=document.getElementById("legR"),legP=document.getElementById("legP");
+for(let l=0;l<=5;l++){let a=document.createElement("span");a.className="lg";a.style.background=l?COL[l]:"var(--card)";legR.appendChild(a);let b=document.createElement("span");b.className="lg";b.style.background=l?COL2[l]:"var(--card)";legP.appendChild(b);}
+const tabs=document.getElementById("tabs");
+TABS.forEach(g=>{const t=document.createElement("div");t.className="tab"+(g==view?" on":"");t.textContent=g=="당장"?dangLabel():(g=="기간"?"기간 목표":"전체");t.dataset.g=g;t.onclick=()=>{view=g;editing=false;curRange="단원";document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.dataset.g==g));render();};tabs.appendChild(t);});
+const modesEl=document.getElementById("modes");
+["회독","선택","사례","기록"].forEach(m=>{const b=document.createElement("button");b.className="b"+(m==mode?" on":"");b.id="m_"+m;b.textContent=m;b.onclick=()=>setMode(m);modesEl.appendChild(b);});
+
+function setMode(m){mode=m;["회독","선택","사례","기록"].forEach(x=>document.getElementById("m_"+x).className="b"+(x==m?" on":""));render();}
+function setPeriod(pid){curPid=pid;curRange="단원";if(pid=="누적")editing=false;render();}
+function setRange(r){curRange=r;render();}
+function setCurrent(pid){goalP.현재=pid;saveSets();render();}
+function toggleEditing(){if(editArr()==null)return;editing=!editing;render();}
+function buildCtrl(){
+ const dt=document.querySelector('.tab[data-g="당장"]');if(dt)dt.textContent=dangLabel();   // 현재 지정 반영
+ const c=document.getElementById("selCtrl");
+ if(view!="당장"&&view!="기간"){c.style.display="none";return;}
+ c.style.display="block";
+ if(view=="기간"&&curPid==null)curPid=goalP.현재||PERIODS[0].id;
+ const pid=activePid();
+ let h="";
+ if(view=="기간"){
+  h+='<span style="font-size:12px;color:var(--mut)">기간:</span> '
+   +PERIODS.map(p=>`<button class="b${p.id==curPid?' on':''}" onclick="setPeriod('${p.id}')">${p.n}${p.id==goalP.현재?' ★':''}</button>`).join("")
+   +`<button class="b${curPid=='누적'?' on':''}" onclick="setPeriod('누적')">누적</button><br>`;
+ }
+ if(pid&&pid!="누적"){
+  if(SEMS.includes(pid))
+   h+='<span style="font-size:12px;color:var(--mut)">범위:</span> '+["단원","중간","기말"].map(r=>`<button class="b${r==curRange?' on':''}" onclick="setRange('${r}')">${r=="단원"?"학기 전체":r}</button>`).join("")+' <span class="sep"></span>';
+  h+=`<button class="b${editing?' on':''}" onclick="toggleEditing()">${editing?'편집 완료':'단원 편집'}</button>`;
+  if(view=="기간"&&pid!=goalP.현재)h+=` <button class="b" onclick="setCurrent('${pid}')">현재로 지정</button>`;
+  const rl=(SEMS.includes(pid)&&curRange!="단원")?curRange:"전체";
+  h+=` <span style="font-size:12px;color:var(--mut)">${pname(pid)} ${rl} ${(activeBucket()||[]).length}단원${editing?' · 과목/중분류 헤더 클릭=일괄':''}</span>`;
+ }else if(view=="기간"&&pid=="누적"){
+  h+=`<span style="font-size:12px;color:var(--mut)">누적(전 기간 합산) ${cumSet().size}단원 · 편집 불가</span>`;
+ }else if(view=="당장"&&!pid){
+  h+='<span style="font-size:12px;color:var(--mut)">현재 기간 미지정 — [기간 목표] 탭에서 기간을 고르고 [현재로 지정]을 누르세요.</span>';
+ }
+ c.innerHTML=h;
+}
+function render(){
+ buildCtrl();
+ const vset=viewSet(), ed=isEdit();
+ const board=document.getElementById("board");board.innerHTML="";
+ let any=false;
+ ALL.forEach(subj=>{
+  const rows=[];
+  for(const mid in BOARD[subj]){
+   const units=BOARD[subj][mid].filter(u=>!vset||ed||vset.has(subj+"|"+mid+"|"+u));
+   if(!units.length)continue;
+   const row=document.createElement("div");row.className="mrow";
+   const ax=document.createElement("div");ax.className="axis";
+   if(ed){ax.style.cursor="pointer";ax.title="중분류 전체 담기/빼기";ax.innerHTML=`${mid} <span class="bulk">(전체)</span>`;ax.onclick=()=>{bulkSel(units.map(u=>subj+"|"+mid+"|"+u));render();};}
+   else{let done=0,rs=0,ss=0,cs=0,gs=0;units.forEach(u=>{const k=subj+"|"+mid+"|"+u;const r=st[k]||0;if(r>0)done++;rs+=r;ss+=sel[k]||0;cs+=cas[k]||0;gs+=rec[k]||0;});ax.innerHTML=`${mid}<small>${done}/${units.length} · ${(rs/units.length).toFixed(1)}회 · 선${ss}·사${cs}·기${gs}</small>`;}
+   row.appendChild(ax);
+   const cells=document.createElement("div");cells.className="cells";
+   units.forEach(u=>{const k=subj+"|"+mid+"|"+u;const c=document.createElement("div");c.className="cell";c.dataset.k=k;c.innerHTML=`${u}<b></b>`;
+    if(ed){paintMem(c,k);c.onclick=()=>{toggleSel(k);render();};}
+    else{paintCell(c,k);c.addEventListener("click",e=>bump(k,e.shiftKey?-1:1));c.addEventListener("contextmenu",e=>{e.preventDefault();bump(k,-1);});}
+    cells.appendChild(c);});
+   row.appendChild(cells);rows.push(row);any=true;
+  }
+  if(rows.length){const h=document.createElement("div");h.className="subj";
+   if(ed){h.style.cursor="pointer";h.title="과목 전체 담기/빼기";h.innerHTML=`${subj} <span class="bulk">(과목 전체)</span>`;h.onclick=()=>{bulkSel(unitsOf(subj));render();};}
+   else h.textContent=subj;
+   board.appendChild(h);rows.forEach(r=>board.appendChild(r));}
+ });
+ if(!any&&!ed){let msg="";
+  if(view=="당장")msg=goalP.현재?(pname(goalP.현재)+" 목표가 비어 있음 — [단원 편집]으로 담으세요."):"현재 기간 미지정 — [기간 목표] 탭에서 기간 선택 후 [현재로 지정]을 누르세요.";
+  else if(view=="기간")msg=curPid=="누적"?"담긴 단원 없음 — 각 기간에서 담으면 합쳐 보입니다.":pname(curPid)+((SEMS.includes(curPid)&&curRange!="단원")?" "+curRange:"")+" 단원 미지정 — [단원 편집]으로 담으세요.";
+  if(msg)board.innerHTML=`<p style="color:var(--mut)">${msg}</p>`;}
+ updStat(vset);
+}
+function paintCell(c,k){const r=st[k]||0;
+ if(mode=="회독"){c.style.background=r?COL[r]:"var(--card)";c.style.color=r>=3?"#fff":(r?"#173404":"var(--tx)");c.style.borderColor=r?COL[r]:"var(--line)";}
+ else{const v=PROB[mode][k]||0,t=ptier(v);c.style.background=t?COL2[t]:"var(--card)";c.style.color=t>=3?"#fff":(t?"#633806":"var(--tx)");c.style.borderColor=t?COL2[t]:"var(--line)";}
+ const ps=[];if(sel[k])ps.push("선"+sel[k]);if(cas[k])ps.push("사"+cas[k]);if(rec[k])ps.push("기"+rec[k]);
+ c.querySelector("b").innerHTML=(r?r+"회":"")+(ps.length?(r?" ":"")+'<span style="opacity:.8">'+ps.join(" ")+'</span>':"");}
+function paintMem(c,k){const on=inSel(k);c.style.background=on?"#E1F5EE":"var(--card)";c.style.color=on?"#0F6E56":"var(--tx)";c.style.borderColor=on?"#1D9E75":"var(--line)";c.querySelector("b").textContent=on?"✓":"+";}
+function saveAll(){localStorage.setItem(KEY,JSON.stringify(st));localStorage.setItem(SEL,JSON.stringify(sel));localStorage.setItem(CAS,JSON.stringify(cas));localStorage.setItem(REC,JSON.stringify(rec));localStorage.setItem(KEY+"_upd",upd);}
+function bump(k,d){if(mode=="회독"){st[k]=((st[k]||0)+d+6)%6;}else{const o=PROB[mode];o[k]=Math.max(0,(o[k]||0)+d);}upd=new Date().toLocaleString("ko-KR");const p=k.split("|");log.push([upd,p[0],p[1],p[2],mode,(mode=="회독"?st[k]:PROB[mode][k]),d]);if(log.length>3000)log=log.slice(-3000);localStorage.setItem(LKEY,JSON.stringify(log));saveAll();render();}
+function updStat(vset){let ks=[];if(vset){vset.forEach(k=>{if(VALID.has(k))ks.push(k);});}else{ALL.forEach(s=>unitsOf(s).forEach(k=>ks.push(k)));}
+ let touch=0,rs=0,ss=0,cs=0,gs=0;ks.forEach(k=>{const r=st[k]||0;if(r>0)touch++;rs+=r;ss+=sel[k]||0;cs+=cas[k]||0;gs+=rec[k]||0;});const tot=ks.length;
+ document.getElementById("scope").textContent=tot;
+ document.getElementById("avg").textContent=tot?(rs/tot).toFixed(1):"0.0";
+ document.getElementById("pct").textContent=tot?Math.round(touch/tot*100)+"%":"0%";
+ document.getElementById("tsel").textContent=ss;document.getElementById("tcas").textContent=cs;document.getElementById("trec").textContent=gs;
+ document.getElementById("gf").style.width=(tot?touch/tot*100:0)+"%";
+ document.getElementById("upd").textContent=upd;}
+function resetAll(){if(confirm("회독·선택·사례·기록 기록을 모두 지울까요? (기간 목표 선택은 유지)")){st={};[sel,cas,rec].forEach(o=>Object.keys(o).forEach(k=>delete o[k]));saveAll();render();}}
+function exportJSON(){const m=legacyMirror();const b=new Blob([JSON.stringify({updated:upd,회독:st,선택:sel,사례:cas,기록:rec,기간목표:goalP,내신_학기별:m.내신_학기별,방학_단원:m.방학_단원,기록로그:log},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="진도_board_export.json";a.click();}
+function stamp(){return new Date().toISOString().slice(0,10);}
+function curRows(){const rows=[["과목","중분류","소단원","회독","선택","사례","기록"]];ALL.forEach(s=>{for(const m in BOARD[s])BOARD[s][m].forEach(u=>{const k=s+"|"+m+"|"+u;rows.push([s,m,u,st[k]||0,sel[k]||0,cas[k]||0,rec[k]||0]);});});return rows;}
+function dlCSV(rows,name){const csv="﻿"+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\r\n");const b=new Blob([csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=name;a.click();}
+function exportXLSX(){const cur=curRows();const lg=[["시각","과목","중분류","소단원","종류","값","증감"]].concat(log);
+ if(window.XLSX){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cur),"진도현황");XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(lg),"기록로그");XLSX.writeFile(wb,"진도_export_"+stamp()+".xlsx");}
+ else{dlCSV(cur,"진도현황_"+stamp()+".csv");dlCSV(lg,"기록로그_"+stamp()+".csv");alert("엑셀 라이브러리 미로드(오프라인?) → CSV 2개로 내보냈습니다(엑셀에서 열림).");}}
+function loadInto(o,s){Object.keys(o).forEach(k=>delete o[k]);if(s)Object.assign(o,s);}
+function importFile(file){const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(o.회독)loadInto(st,o.회독);if(o.선택)loadInto(sel,o.선택);if(o.사례)loadInto(cas,o.사례);if(o.기록)loadInto(rec,o.기록);if(o.기간목표)goalP=sanitizeGoal(o.기간목표);else if(o.내신_학기별||o.방학_단원)goalP=sanitizeGoal(migrateGoal(o.방학_단원||[],o.내신_학기별||{}));if(Array.isArray(o.기록로그)){log=o.기록로그;localStorage.setItem(LKEY,JSON.stringify(log));}saveAll();saveSets();render();alert("가져오기 완료");}catch(e){alert("JSON 파싱 실패: "+e.message);}};r.readAsText(file);}
+function toggleHelp(){const b=document.getElementById("helpBody");const open=b.style.display!="none";b.style.display=open?"none":"block";document.getElementById("helpTog").textContent=open?"펼치기 ▸":"접기 ▾";}
+function storageOK(){try{localStorage.setItem("__t","1");localStorage.removeItem("__t");return true;}catch(e){return false;}}
+function showStorage(){const p=document.getElementById("storage");if(p.style.display=="block"){p.style.display="none";return;}p.style.display="block";
+ const len=k=>{const v=localStorage.getItem(k)||"";return v.length>=1024?(v.length/1024).toFixed(1)+"KB":v.length+"B";};
+ const cnt=k=>{try{const o=JSON.parse(localStorage.getItem(k)||"{}");return Array.isArray(o)?o.length:Object.keys(o).length;}catch(e){return 0;}};
+ let total=0;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);total+=(k+(localStorage.getItem(k)||"")).length;}
+ p.innerHTML=`<div style="font-size:14px;font-weight:600;margin-bottom:6px">저장 환경</div><table>
+ <tr><td>저장 방식</td><td>브라우저 <b>localStorage</b> — 클릭 즉시 자동 저장</td></tr>
+ <tr><td>이 파일 경로</td><td>${decodeURIComponent(location.pathname)} <small>(${location.protocol})</small></td></tr>
+ <tr><td>localStorage 가용</td><td>${storageOK()?"예":"<span class=warn>아니오</span>"}</td></tr>
+ <tr><td>회독 / 선택 / 사례 / 기록</td><td>${cnt(KEY)} / ${cnt(SEL)} / ${cnt(CAS)} / ${cnt(REC)} 단원</td></tr>
+ <tr><td>현재 기간(당장)</td><td>${goalP.현재?pname(goalP.현재)+" — "+goalP.기간별[goalP.현재].단원.length+"단원":"미지정"}</td></tr>
+ <tr><td>기간 목표 합산</td><td>${cumSet().size}단원 (${PERIODS.filter(p=>goalP.기간별[p.id].단원.length).map(p=>p.n+" "+goalP.기간별[p.id].단원.length).join(" / ")||"없음"})</td></tr>
+ <tr><td>최종 저장</td><td>${localStorage.getItem(KEY+"_upd")||"—"}</td></tr>
+ <tr><td>도메인 합계</td><td>${(total/1024).toFixed(1)}KB</td></tr></table>
+ <p class="warn" style="margin:6px 0 0">주의: 기록은 이 경로·이 브라우저에만 저장됩니다 → [JSON 내보내기]로 6.진도관리/백업/에 주기 백업.</p>`;}
+render();
+</script>
+<!-- ===== 볼트 직결(File System Access): file://에서 서버 없이 논점 frontmatter 직접 읽기·쓰기 =====
+     board_server_v2.py의 build_board/write_state/read_weak/read_exams/upsert_exam/add_weak/append_log와 로직 동일(파리티).
+     크롬·엣지 전용. 최초 1회 볼트 루트(E:\법학볼트) 지정 → IndexedDB에 핸들 기억. ===== -->
+<script>
+(function(){
+  const SUBJ=["민법","형법총론","형법각론","헌법","민사소송법","민사집행법","행정법","형사소송법","상법","선택법"]; // board_server_v2.py SUBJ와 통일
+  const FKINDS=["회독","선택","사례","기록"];
+  const supported = location.protocol==='file:' && typeof window.showDirectoryPicker==='function';
+  const V = window.VaultFS = { supported:supported, connected:false, writable:null, board:null, dotOK:null, onerror:null, onsaved:null };
+  if(!supported) return;
+
+  // ---------- IndexedDB: 폴더 핸들 기억(재방문 시 1클릭 재연결) ----------
+  function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open('jindo_vault',1);
+    r.onupgradeneeded=()=>{ r.result.createObjectStore('kv'); };
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+  async function idbGet(k){ try{ const db=await idb(); return await new Promise((res,rej)=>{ const t=db.transaction('kv').objectStore('kv').get(k); t.onsuccess=()=>res(t.result); t.onerror=()=>rej(t.error); }); }catch(e){ return null; } }
+  async function idbSet(k,v){ try{ const db=await idb(); await new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite').objectStore('kv').put(v,k); t.onsuccess=()=>res(); t.onerror=()=>rej(t.error); }); }catch(e){} }
+
+  let root=null, values={};   // values[key]={회독,선택,사례,기록,약점,진도} — 서버 build_board와 동일 캐시
+
+  // ---------- frontmatter 유틸(서버 _split/_get/_set_fm_field 파리티) ----------
+  const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  function splitFM(t){ if(!t.startsWith('---')) return null; const e=t.indexOf('\n---',3); return e>0?{fm:t.slice(3,e),e:e}:null; }
+  function fmGet(fm,key,dflt){ if(dflt===undefined)dflt=''; const m=fm.match(new RegExp('^'+esc(key)+':\\s*(.*)$','m')); if(!m) return dflt;
+    let v=m[1].trim(); if(v.length>=2&&v[0]===v[v.length-1]&&(v[0]==='"'||v[0]==="'")) v=v.slice(1,-1); return v; }
+  function setFM(t,fields){ const s=splitFM(t); if(!s) return null; let fm=s.fm;
+    for(const k in fields){ const line=k+': '+fields[k]; const re=new RegExp('^'+esc(k)+':.*$','mg'); // g: 중복 키 전부 치환(서버 re.sub 파리티)
+      fm = re.test(fm) ? fm.replace(re,function(){return line;}) : fm+'\n'+line; re.lastIndex=0; }
+    return '---'+fm+t.slice(s.e); }
+  function todayISO(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  function jsort(j){ const m=/^(\D*?)(\d+)/.exec(j||''); return m?[m[1],parseInt(m[2],10)]:[j||'',0]; }
+
+  // ---------- 파일 접근 ----------
+  async function dirOf(path,create){ let d=root; for(const p of path) d=await d.getDirectoryHandle(p,{create:!!create}); return d; }
+  async function readText(fh){ const f=await fh.getFile(); let t=await f.text(); if(t.charCodeAt(0)===0xFEFF) t=t.slice(1); return t; }
+  async function writeText(fh,text){ const w=await fh.createWritable(); await w.write(text); await w.close(); }
+  async function noteFile(key){ const p=key.split('|'); if(p.length!==3) return null;
+    try{ const d=await dirOf(['sync','위키',p[0]]); return await d.getFileHandle(p[2]+'.md'); }catch(e){ return null; } }
+  async function patchNote(key,fields){ const fh=await noteFile(key); if(!fh) return false;
+    const t=await readText(fh); const nt=setFM(t,fields); if(nt===null) return false; await writeText(fh,nt); return true; }
+  async function validRoot(h){ try{ const s=await h.getDirectoryHandle('sync'); await s.getDirectoryHandle('위키'); return true; }catch(e){ return false; } }
+
+  // ---------- 연결 ----------
+  V.autoConnect=async function(){ const h=await idbGet('root'); if(!h) return false;
+    try{ const rw=await h.queryPermission({mode:'readwrite'});           // 쓰기 허용이면 최선,
+      if(rw!=='granted'&&(await h.queryPermission({mode:'read'}))!=='granted') return false; // 읽기라도 되면 연결(쓰기는 연결 후 버튼으로 요청)
+    }catch(e){ return false; }
+    if(!(await validRoot(h))) return false; root=h; return true; };
+  V.reconnect=async function(){ let h=await idbGet('root');
+    if(h){ try{ if(await h.requestPermission({mode:'readwrite'})!=='granted') h=null; }catch(e){ h=null; }
+      if(h&&!(await validRoot(h))) h=null; }
+    if(!h){ h=await window.showDirectoryPicker({id:'jindo-vault',mode:'readwrite'});
+      if(!(await validRoot(h))){ alert('법학볼트 루트 폴더(sync\\위키 포함)를 선택하세요. 예: E:\\법학볼트'); return false; }
+      await idbSet('root',h); }
+    root=h; return true; };
+  V.canWrite=async function(){ if(!root) return false;
+    try{ return (await root.queryPermission({mode:'readwrite'}))==='granted'; }catch(e){ return false; } };
+  V.requestWrite=async function(){ if(!root) return false;   // 사용자 제스처(버튼 클릭) 안에서 호출
+    try{ return (await root.requestPermission({mode:'readwrite'}))==='granted'; }catch(e){ return false; } };
+  V.forget=async function(){ await idbSet('root',null); root=null; };  // 기억한 핸들 폐기(폴더 재선택 유도)
+
+  // ---------- 스캔(서버 build_board 파리티) ----------
+  async function scan(){
+    const wiki=await dirOf(['sync','위키']);
+    const board={}; values={};
+    for(const s of SUBJ){
+      let sd; try{ sd=await wiki.getDirectoryHandle(s); }catch(e){ continue; }
+      const rows=[];
+      for await (const ent of sd.entries()){
+        const name=ent[0], h=ent[1];
+        if(h.kind!=='file'||!name.endsWith('.md')||name.startsWith('_')) continue;
+        let t; try{ t=await readText(h); }catch(e){ continue; }
+        const sp=splitFM(t); if(!sp) continue;
+        if(fmGet(sp.fm,'type')!=='쟁점') continue;
+        const title=name.slice(0,-3);
+        const dae=fmGet(sp.fm,'대분류')||'(미분류)';
+        const key=s+'|'+dae+'|'+title;
+        const num=k=>{ const v=(fmGet(sp.fm,k,'0')||'0').trim(); return /^[+-]?\d+$/.test(v)?parseInt(v,10):0; }; // 서버 int() 파리티: 비정수는 0
+        values[key]={회독:num('회독'),선택:num('선택'),사례:num('사례'),기록:num('기록'),
+          약점:fmGet(sp.fm,'약점','false').toLowerCase()==='true', 진도:fmGet(sp.fm,'진도','미착수')};
+        rows.push([dae,jsort(fmGet(sp.fm,'논점')),title]);
+      }
+      if(!rows.length) continue;
+      rows.sort((a,b)=>{ if(a[0]!==b[0]) return a[0]<b[0]?-1:1;
+        if(a[1][0]!==b[1][0]) return a[1][0]<b[1][0]?-1:1; return a[1][1]-b[1][1]; });
+      board[s]={};
+      rows.forEach(r=>{ (board[s][r[0]]=board[s][r[0]]||[]).push(r[2]); });
+    }
+    V.board=board;
+  }
+
+  // ---------- 상태(서버 read_state 파리티) ----------
+  async function goalRead(){ try{ const bk=await dirOf(['6.진도관리','백업']);
+    const gh=await bk.getFileHandle('진도보드_목표.json'); return JSON.parse(await readText(gh)); }catch(e){ return {}; } }
+  async function readState(){
+    const out={회독:{},선택:{},사례:{},기록:{}}; const weakKeys=[];
+    for(const key in values){ const v=values[key];
+      for(const kind of FKINDS) if(v[kind]) out[kind][key]=v[kind];
+      if(v.약점) weakKeys.push(key); }
+    const g=await goalRead();
+    return {updated:'',회독:out.회독,선택:out.선택,사례:out.사례,기록:out.기록,약점단원:weakKeys,
+      기간목표:g['기간목표']||null,방학_단원:g['방학_단원']||[],내신_학기별:g['내신_학기별']||{},기록로그:[]};
+  }
+
+  // ---------- 저장(서버 write_state 파리티: 변경분만 frontmatter 기록 + 목표 json) ----------
+  async function writeSave(snap){
+    let changed=0; const tdy=todayISO();
+    for(const kind of FKINDS){
+      const d=snap[kind]||{};
+      for(const key in d){
+        const val=parseInt(d[key],10); if(isNaN(val)) continue;
+        const cur=values[key]; if(!cur||cur[kind]===val) continue;
+        const fields={}; fields[kind]=val;
+        if(val>cur[kind]) fields['최근체크']=tdy;                       // 증가 체크만 스탬프(L0 연동)
+        if(kind==='회독'&&val>0&&cur['진도']==='미착수') fields['진도']='진행';
+        if(await patchNote(key,fields)){ cur[kind]=val; if(fields['진도'])cur['진도']='진행'; changed++; }
+      }
+    }
+    for(const kind of FKINDS){                                          // 0으로 내려간 키(스냅샷 부재) 반영
+      const d=snap[kind]||{};
+      for(const key in values){
+        if(values[key][kind]>0 && !(key in d)){
+          const f={}; f[kind]=0;
+          if(await patchNote(key,f)){ values[key][kind]=0; changed++; }
+        }
+      }
+    }
+    const bk=await dirOf(['6.진도관리','백업'],true);   // 목표 저장 실패는 무음 삼키지 않고 상위(onerror)로 전파
+    const gh=await bk.getFileHandle('진도보드_목표.json',{create:true});
+    const n=new Date(),p=x=>String(x).padStart(2,'0');
+    await writeText(gh,JSON.stringify({'기간목표':snap['기간목표']||null,'방학_단원':snap['방학_단원']||[],'내신_학기별':snap['내신_학기별']||{},
+      updated:n.getFullYear()+'-'+p(n.getMonth()+1)+'-'+p(n.getDate())+' '+p(n.getHours())+':'+p(n.getMinutes())},null,1));
+    return {ok:true,changed:changed};
+  }
+
+  // ---------- 로그(서버 append_log 파리티: jsonl append) ----------
+  async function appendLog(entry){
+    try{ const bk=await dirOf(['6.진도관리','백업'],true);
+      const fh=await bk.getFileHandle('진도보드_log.jsonl',{create:true});
+      const size=(await fh.getFile()).size;
+      const w=await fh.createWritable({keepExistingData:true});
+      await w.write({type:'write',position:size,data:JSON.stringify(entry)+'\n'}); await w.close();
+    }catch(e){}
+    return {ok:true};
+  }
+
+  // ---------- 약점·시험(learning.json — 서버 read_weak/add_weak/read_exams/upsert_exam 파리티) ----------
+  async function learningFile(create){ const d=await dirOf(['.agent','state'],!!create); return await d.getFileHandle('learning.json',{create:!!create}); }
+  async function learningRead(){ try{ return JSON.parse(await readText(await learningFile())); }catch(e){ return {}; } }
+  async function readWeak(){
+    const lj=await learningRead(); const t=todayISO(); const due=[],up=[];
+    (((lj.srs||{}).items)||[]).forEach(it=>{ const nr=it.next_review||'';
+      const row={content:it.content||'',topic:it.topic||'',next_review:nr,priority:it.priority||''};
+      (nr&&nr<=t?due:up).push(row); });
+    return {weak_points:lj.weak_points||[],srs_due:due,srs_upcoming:up,today:t};
+  }
+  async function postWeak(body){
+    const cands=(body.candidates||[]).slice();
+    const manual=(body.manual||'').trim(); if(manual) cands.push({label:manual,tag:'[추가]'});
+    const lj=await learningRead();
+    const wp=Array.isArray(lj.weak_points)?lj.weak_points:[]; const existing=new Set(wp); const added=[];
+    for(const c of cands){ const label=c.label||c.content; if(!label) continue;
+      const full=(c.tag||'[진도보드]')+' '+label;
+      if(existing.has(full)) continue; wp.push(full); existing.add(full); added.push(full); }
+    lj.weak_points=wp;
+    try{ await writeText(await learningFile(true),JSON.stringify(lj,null,4)); }
+    catch(e){ return {added:[],weak_points:wp,error:String(e)}; }
+    return {added:added,weak_points:wp};
+  }
+  async function readExams(){
+    const lj=await learningRead(); const out=[];
+    const t0=new Date(); const base=new Date(t0.getFullYear(),t0.getMonth(),t0.getDate());
+    (Array.isArray(lj.exams)?lj.exams:[]).forEach(e=>{ if(!e||typeof e!=='object') return;
+      const d=e.date; let dday=null;
+      if(d){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d); if(m) dday=Math.round((new Date(+m[1],+m[2]-1,+m[3])-base)/864e5); }
+      const subs=(e.subjects===undefined)?'all':e.subjects;
+      out.push({name:e.name||'시험',date:d,subjects:Array.isArray(subs)?subs:'all',dday:dday}); });
+    return {exams:out,today:todayISO()};
+  }
+  async function postExam(body){
+    const name=body.name||''; if(!name) return {ok:false,error:'name 필요'};
+    let dnorm=null; const ds=(body.date||'').trim();
+    if(ds){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(ds); const dt=m?new Date(+m[1],+m[2]-1,+m[3]):null;
+      if(!m||dt.getMonth()!==+m[2]-1||dt.getDate()!==+m[3]) return {ok:false,error:'날짜 형식 오류: '+ds};
+      dnorm=ds; }
+    let subs=(body.subjects===undefined)?'all':body.subjects;
+    if(typeof subs==='string') subs=(subs.trim().toLowerCase()==='all')?'all':subs.split(',').map(x=>x.trim()).filter(Boolean);
+    if(!subs||(Array.isArray(subs)&&!subs.length)) subs='all';
+    const lj=await learningRead();
+    const exams=Array.isArray(lj.exams)?lj.exams:[];
+    const found=exams.find(e=>e&&typeof e==='object'&&e.name===name);
+    if(!found) exams.push({name:name,date:dnorm,subjects:subs}); else{ found.date=dnorm; found.subjects=subs; }
+    lj.exams=exams;
+    try{ await writeText(await learningFile(true),JSON.stringify(lj,null,4)); }
+    catch(e){ return {ok:false,error:String(e)}; }
+    return {ok:true};
+  }
+
+  // ---------- 부팅·API 디스패처(쓰기는 직렬 큐로 충돌 방지) ----------
+  let chain=Promise.resolve();
+  function enqueue(fn){ const r=chain.then(fn,fn); chain=r.then(function(){},function(){}); return r; }
+  V.boot=async function(){
+    try{ await dirOf(['.agent','state']); V.dotOK=true; }
+    catch(e){ V.dotOK=(e&&e.name==='NotFoundError'); }  // 숨김폴더(.agent) '차단'만 감지 — 미존재(NotFound)는 이후 create로 해결되므로 차단 아님
+    await scan(); V.connected=true; return V.board;
+  };
+  V.api=function(p,o){
+    const body=(o&&o.body)?JSON.parse(o.body):{};
+    const post=o&&o.method==='POST';
+    if(post&&V.writable===false){ alert('읽기 전용(쓰기 미허용) — 상단 [쓰기 허용] 후 다시 시도하세요. 입력은 저장되지 않았습니다.');
+      return Promise.reject(new Error('read-only')); }   // 무음 유실 방지(시험일·약점 입력 포함)
+    let job;
+    if(p==='/api/state') job=readState();
+    else if(p==='/api/weak') job=post?enqueue(()=>postWeak(body)):readWeak();
+    else if(p==='/api/exams') job=post?enqueue(()=>postExam(body)):readExams();
+    else if(p==='/api/save') job=enqueue(()=>writeSave(body)).then(r=>{ if(V.onsaved)V.onsaved(r.changed); return r; });
+    else if(p==='/api/log') job=enqueue(()=>appendLog(body));
+    else job=Promise.reject(new Error('unknown '+p));
+    return job.catch(e=>{ if(V.onerror)V.onerror(e); throw e; });
+  };
+})();
+</script>
+<!-- ===== 저장 연동: http(서버)=API 경유, file://(크롬·엣지)=볼트 직결, 그 외=localStorage ===== -->
+<script>
+(function(){
+  const SERVER = location.protocol === 'http:' || location.protocol === 'https:';
+  const VAULT = !SERVER && window.VaultFS && window.VaultFS.supported;
+  function statusEl(){
+    let s = document.getElementById('srvStat');
+    if(!s){ s=document.createElement('span'); s.id='srvStat'; s.style.fontSize='11px';
+      const stat=document.querySelector('.stat'); if(stat) stat.appendChild(s); }
+    return s;
+  }
+  if(!SERVER && !VAULT){
+    statusEl().innerHTML='<span style="color:var(--mut)">저장: file:// (localStorage 한정) · 크롬/엣지로 열면 볼트 직결(frontmatter 저장) 가능</span>';
+    return;
+  }
+  const api = SERVER ? ((p,o)=>fetch(p,o).then(r=>r.json())) : ((p,o)=>window.VaultFS.api(p,o));
+
+  // ---- 클릭마다 디스크 저장 ----
+  let saveT=null;
+  function snapshot(){const m=legacyMirror();return {updated:upd,회독:st,선택:sel,사례:cas,기록:rec,기간목표:goalP,내신_학기별:m.내신_학기별,방학_단원:m.방학_단원,기록로그:log};}
+  function scheduleSave(){clearTimeout(saveT);saveT=setTimeout(()=>{api('/api/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(snapshot())}).catch(()=>{});},350);}
+  function pushLog(){const l=log[log.length-1];if(!l)return;api('/api/log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ts:l[0],과목:l[1],중분류:l[2],소단원:l[3],종류:l[4],값:l[5],증감:l[6]})}).catch(()=>{});}
+  const origBump=bump; bump=function(k,d){origBump(k,d);pushLog();scheduleSave();};
+  if(typeof saveSets==='function'){const oS=saveSets; saveSets=function(){oS();scheduleSave();};}
+
+  // ---- 약점 색상 + 패널 ----
+  let weak={weak_points:[],srs_due:[],srs_upcoming:[],today:''};
+  let showWeak=true;
+  function weakUnits(){const out=[];for(const k of VALID){const r=st[k]||0,c=cas[k]||0,g=rec[k]||0;let reason='';
+    if(c>=2&&r<=1)reason='사례'+c+'·회독'+r; else if(g>=1&&r===0)reason='기록'+g+'·회독0';
+    if(reason){const p=k.split('|');out.push({key:k,과목:p[0],중분류:p[1],소단원:p[2],label:p[0]+'>'+p[1]+'>'+p[2]+' — '+reason,reason});}}return out;}
+  function paintWeak(){document.querySelectorAll('.cell').forEach(c=>{c.classList.remove('weak');c.style.boxShadow='';});
+    if(!showWeak)return;const set=new Set(weakUnits().map(w=>w.key));
+    document.querySelectorAll('.cell').forEach(c=>{if(set.has(c.dataset.k)){c.classList.add('weak');c.style.boxShadow='inset 0 0 0 2px #A32D2D';}});}
+  const origRender=render; render=function(){origRender();paintWeak();};
+
+  function renderWeakPanel(){
+    const list=document.getElementById('weakList'); if(!list)return;
+    const sig=weakUnits(),due=weak.srs_due||[],wp=weak.weak_points||[];
+    let h='<div style="margin-bottom:6px"><b style="color:#A32D2D">보드 신호 약점</b> '+sig.length+'단원'+(showWeak?' · 보드에 빨간 테두리':'');
+    if(sig.length)h+='<ul style="margin:4px 0;padding-left:18px">'+sig.slice(0,25).map(w=>'<li>'+w.과목+'&gt;'+w.중분류+'&gt;'+w.소단원+' <span style="color:var(--mut)">('+w.reason+')</span></li>').join('')+'</ul>';
+    h+='</div><div style="margin-bottom:6px"><b>SRS 임박</b> '+due.length+'건';
+    if(due.length)h+='<ul style="margin:4px 0;padding-left:18px">'+due.map(d=>'<li>'+d.content+' <span style="color:var(--mut)">('+d.next_review+')</span></li>').join('')+'</ul>';
+    h+='</div><div><b>등록 약점(개념)</b> '+wp.length+'건';
+    if(wp.length)h+='<ul style="margin:4px 0;padding-left:18px">'+wp.map(w=>'<li>'+w+'</li>').join('')+'</ul>';
+    h+='</div>';list.innerHTML=h;
+  }
+  function loadWeak(){return api('/api/weak').then(w=>{weak=w;renderWeakPanel();}).catch(()=>{});}
+  function addWeakManual(){
+    const inp=document.getElementById('weakInput'),sel=document.getElementById('weakUnit');
+    const text=(inp.value||'').trim(); if(!text){inp.focus();return;}
+    api('/api/weak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({manual:text,unit:sel.value||''})})
+      .then(res=>{inp.value='';const a=(res.added&&res.added.length)?res.added[res.added.length-1]:'(이미 있음)';alert('약점 추가: '+a);loadWeak();});
+  }
+  function unitOptions(){
+    let o='<option value="">(개념·단원없음)</option>';
+    for(const k of [...VALID].sort()){const p=k.split('|');o+='<option value="'+k+'">'+p[0]+' &gt; '+p[2]+'</option>';}
+    return o;
+  }
+  function buildWeakUI(){
+    const btns=document.querySelector('.btns');
+    if(btns&&!document.getElementById('weakTog')){
+      const t=document.createElement('button');t.className='b on';t.id='weakTog';t.textContent='약점 색상';
+      t.onclick=()=>{showWeak=!showWeak;t.classList.toggle('on',showWeak);paintWeak();renderWeakPanel();};btns.appendChild(t);
+      const rf=document.createElement('button');rf.className='b';rf.textContent='약점 표에 반영';
+      rf.title='보드 신호 약점 후보를 learning.json weak_points 에 추가';
+      rf.onclick=()=>{const cand=weakUnits();if(!cand.length){alert('보드 신호 기반 약점 후보가 없습니다.');return;}
+        api('/api/weak',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({candidates:cand})})
+          .then(res=>{alert('약점 표 반영: 신규 '+(res.added?res.added.length:0)+'건 (총 '+(res.weak_points?res.weak_points.length:0)+')');loadWeak();});};
+      btns.appendChild(rf);
+    }
+    let p=document.getElementById('weakPanel');
+    if(!p){p=document.createElement('div');p.id='weakPanel';p.className='box';
+      const a=document.getElementById('storage');if(a&&a.parentNode)a.parentNode.insertBefore(p,a);else document.body.appendChild(p);}
+    if(!document.getElementById('weakList')){
+      p.innerHTML='<div style="font-size:14px;font-weight:600;margin-bottom:6px">약점 연동 <span style="font-weight:400;color:var(--mut)">(.agent/state/learning.json)</span></div>'
+        +'<div style="margin-bottom:8px;display:flex;gap:5px;flex-wrap:wrap;align-items:center">'
+        +'<input id="weakInput" placeholder="약점 직접 추가 (예: 권리남용 주관요건)" style="flex:1;min-width:150px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--tx);font:inherit;font-size:12px">'
+        +'<select id="weakUnit" title="단원에 묶으면 드릴이 그 단원을 우선 출제" style="padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--tx);font:inherit;font-size:12px;max-width:190px">'+unitOptions()+'</select>'
+        +'<button class="b" id="weakAddBtn">추가</button></div><div id="weakList"></div>';
+      document.getElementById('weakAddBtn').onclick=addWeakManual;
+      document.getElementById('weakInput').addEventListener('keydown',e=>{if(e.key==='Enter')addWeakManual();});
+    }
+    renderWeakPanel();
+  }
+
+  // ---- 시험일 다중 타깃: 담은 내신/변시 → 날짜만 입력(과목은 담긴 단원에서 자동) ----
+  let examData={exams:[]};
+  function subjectsOf(arr){const set=new Set();(arr||[]).forEach(k=>set.add(k.split('|')[0]));return [...set];}
+  function examTargets(){
+    const t=[{name:'변시',label:'변시 (전과목)',subjects:'all'}];
+    SEMS.forEach(s=>{const b=goalP.기간별[s];if(!b)return;
+      const rows=[];
+      if(b.중간.length)rows.push(['내신_'+s+'_중간','내신 '+s+' 중간',b.중간]);
+      if(b.기말.length)rows.push(['내신_'+s+'_기말','내신 '+s+' 기말',b.기말]);
+      if(!rows.length&&b.단원.length)rows.push(['내신_'+s,'내신 '+s,b.단원]);
+      rows.forEach(r=>{const su=subjectsOf(r[2]);t.push({name:r[0],label:r[1]+' ('+(su.join('·')||'–')+')',subjects:su.length?su:'all'});});
+    });
+    return t;
+  }
+  function postExam(name,dateVal,subjects){
+    api('/api/exams',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,date:dateVal||'',subjects:subjects})}).then(()=>loadExams()).catch(()=>{});
+  }
+  function examRowHTML(name,label){return '<div style="display:flex;gap:8px;align-items:center;margin:3px 0;font-size:12px"><span style="min-width:210px">'+label+'</span>'
+    +'<input type="date" id="exd_'+name+'" style="padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--tx);font:inherit;font-size:12px">'
+    +'<span id="exdday_'+name+'" style="color:var(--mut)">미정</span></div>';}
+  function loadExams(){
+    return api('/api/exams').then(d=>{examData=d||{exams:[]};
+      const extra=document.getElementById('examExtra');
+      (examData.exams||[]).forEach(e=>{
+        if(!document.getElementById('exd_'+e.name)&&extra){   // 타깃 행에 없는 기존 시험(방학_2026·구명 내신 등)도 편집 가능하게 노출
+          const w=document.createElement('div');w.innerHTML=examRowHTML(e.name,e.name+' <span style="color:var(--mut);font-weight:400">(기존 등록)</span>');
+          extra.appendChild(w.firstChild);
+          const ni=document.getElementById('exd_'+e.name);
+          if(ni)ni.onchange=()=>postExam(e.name,ni.value,e.subjects||'all');
+        }
+        const inp=document.getElementById('exd_'+e.name);if(inp)inp.value=e.date||'';
+        const lab=document.getElementById('exdday_'+e.name);if(lab)lab.textContent=e.date?('D'+(e.dday>=0?'-'+e.dday:'+'+(-e.dday))):'미정';});
+    }).catch(()=>{});
+  }
+  function buildExamUI(){
+    let p=document.getElementById('examPanel');
+    if(!p){p=document.createElement('div');p.id='examPanel';p.className='box';
+      const a=document.getElementById('weakPanel');if(a&&a.parentNode)a.parentNode.insertBefore(p,a);
+      else{const s=document.getElementById('storage');if(s&&s.parentNode)s.parentNode.insertBefore(p,s);else document.body.appendChild(p);}}
+    const tg=examTargets();
+    let h='<div style="font-size:14px;font-weight:600;margin-bottom:6px">시험일 <span style="font-weight:400;color:var(--mut)">(담은 내신/변시에 날짜만 입력 · 과목은 담긴 단원에서 자동 · 가까울수록 복습간격 압축)</span> <button class="b" id="examRefresh" style="font-size:11px;padding:3px 8px">↻ 갱신</button></div>';
+    tg.forEach(e=>{h+='<div style="display:flex;gap:8px;align-items:center;margin:3px 0;font-size:12px"><span style="min-width:210px">'+e.label+'</span>'
+      +'<input type="date" id="exd_'+e.name+'" style="padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--tx);font:inherit;font-size:12px">'
+      +'<span id="exdday_'+e.name+'" style="color:var(--mut)">미정</span></div>';});
+    h+='<div id="examExtra"></div>';
+    if(tg.length<=1)h+='<div style="font-size:11px;color:var(--mut);margin-top:4px">[기간 목표] 탭에서 학기에 단원(또는 중간·기말 범위)을 담으면 학기·범위별로 여기 뜹니다.</div>';
+    p.innerHTML=h;
+    tg.forEach(e=>{const inp=document.getElementById('exd_'+e.name);if(inp)inp.onchange=()=>{
+      postExam(e.name,inp.value,e.subjects);};});
+    const rf=document.getElementById('examRefresh');if(rf)rf.onclick=()=>buildExamUI();
+    loadExams();
+  }
+
+  // ---- 부팅: 서버/볼트 상태로 하이드레이트 후 재렌더 ----
+  function hydrate(){return api('/api/state').then(s=>{if(!s)return;
+    if(s.회독)loadInto(st,s.회독); if(s.선택)loadInto(sel,s.선택); if(s.사례)loadInto(cas,s.사례); if(s.기록)loadInto(rec,s.기록);
+    if(s.기간목표)goalP=sanitizeGoal(s.기간목표);
+    else if(s.내신_학기별||Array.isArray(s.방학_단원))goalP=sanitizeGoal(migrateGoal(s.방학_단원||[],s.내신_학기별||{}));
+    localStorage.setItem(PKEY,JSON.stringify(goalP));   // 캐시만 갱신(saveSets는 scheduleSave 래핑이라 부팅 시 저장 트리거 방지)
+    if(Array.isArray(s.기록로그)&&s.기록로그.length){log.length=0;s.기록로그.forEach(r=>log.push(r));}   // 빈 배열로 부팅마다 로그 소거 방지
+    if(s.updated)upd=s.updated; saveAll();
+  }).catch(()=>{});}
+  function bootUI(){return hydrate().then(loadWeak).then(()=>{buildWeakUI();buildExamUI();render();});}
+
+  // ---- 준비 게이트(공용): 하이드레이트 완료(+볼트는 연결·쓰기허용) 전 기록 조작 차단 ----
+  let ready=false;
+  function notReadyMsg(){
+    if(!SERVER){ const V=window.VaultFS;
+      if(!V.connected) return '볼트 미연결 — 상단 [볼트 연결]을 먼저 누르세요. 연결 전 조작은 기록되지 않습니다.';
+      if(V.writable===false) return '읽기 전용(쓰기 미허용) — 상단 [쓰기 허용]을 누르세요.';
+    }
+    return '보드 데이터 로딩 중 — 잠시 후 다시 시도하세요.';
+  }
+  const gBump=bump;           bump=function(k,d){ if(!ready){alert(notReadyMsg());return;} gBump(k,d); };
+  const gEdit=toggleEditing;  toggleEditing=function(){ if(!ready){alert(notReadyMsg());return;} gEdit(); };
+  const gReset=resetAll;      resetAll=function(){ if(!ready){alert(notReadyMsg());return;} gReset(); };
+  const gImport=importFile;   importFile=function(f){ if(!ready){alert(notReadyMsg());return;} gImport(f); };
+  const gCur=setCurrent;      setCurrent=function(p){ if(!ready){alert(notReadyMsg());return;} gCur(p); };
+
+  if(SERVER){
+    statusEl().innerHTML='<span style="color:var(--accent)">● 서버 연결 · 클릭 자동 디스크 저장</span>';
+    bootUI().then(()=>{ready=true;});   // 하이드레이트 완료 전 클릭 차단(경합 방지)
+  }else{
+    // ---- 볼트 직결 모드: 연결 전 기록 차단, 연결 후 논점 보드로 교체 ----
+    const V=window.VaultFS;
+    const oShow=showStorage;    showStorage=function(){ oShow();
+      const p=document.getElementById('storage'); if(!p||p.style.display!=='block') return;
+      const d=document.createElement('p'); d.style.cssText='margin:0 0 6px;font-weight:600;color:'+(ready?'var(--accent)':'#A32D2D');
+      d.textContent=ready?'현재 모드: 볼트 직결 — 기록은 sync/위키 논점 frontmatter에 저장됩니다(아래 localStorage는 캐시).'
+                         :'현재 모드: 미연결 — 기록 차단 상태입니다. [볼트 연결]을 누르세요.';
+      p.insertBefore(d,p.firstChild); };
+
+    function replaceBoard(nb){
+      Object.keys(BOARD).forEach(k=>{delete BOARD[k];});
+      Object.assign(BOARD,nb);
+      ALL.length=0; Object.keys(BOARD).forEach(s=>ALL.push(s));
+      VALID.clear(); for(const s in BOARD) for(const m in BOARD[s]) BOARD[s][m].forEach(u=>VALID.add(s+'|'+m+'|'+u));
+    }
+    const OKSTAT='<span style="color:var(--accent)">● 볼트 직결 · 클릭 시 논점 frontmatter 저장 (서버·bat 불필요)</span>';
+    function connectBtn(label){
+      statusEl().innerHTML='<button class="b" id="vaultBtn" style="border-color:var(--accent);color:var(--accent);font-weight:600">'+label+'</button> <span style="color:var(--mut)">연결 전 클릭은 기록되지 않습니다</span>';
+      document.getElementById('vaultBtn').onclick=async function(){
+        try{ if(await V.reconnect()) await onConnected(); }
+        catch(e){ if(e&&e.name==='AbortError') return; alert('볼트 연결 실패: '+(e&&e.message||e)); }
+      };
+    }
+    async function onConnected(){
+      statusEl().innerHTML='<span style="color:var(--mut)">볼트 스캔 중…</span>';
+      try{ await V.boot(); }
+      catch(e){ alert('볼트 스캔 실패: '+(e&&e.message||e)); connectBtn('볼트 연결'); return; }
+      replaceBoard(V.board);
+      V.onsaved=function(){ statusEl().innerHTML=OKSTAT; };
+      V.onerror=function(e){ statusEl().innerHTML='<span class="warn">저장 실패('+(e&&e.name||e)+') — 셀 재클릭 또는 </span>';
+        connectBtnInline(); };
+      function connectBtnInline(){ const b=document.createElement('button'); b.className='b'; b.textContent='볼트 재연결';
+        b.onclick=async function(){ try{ if(await V.reconnect()){ statusEl().innerHTML=OKSTAT; } }catch(e){} };
+        statusEl().appendChild(b); }
+      const h1=document.querySelector('h1'); if(h1)h1.textContent='진도 보드 v8 (논점·frontmatter·볼트직결)';
+      document.title='진도 보드 v8 (볼트직결)';
+      await bootUI();
+      // 하이드레이트 완료 + 쓰기 권한 확인 후에만 기록 허용(stale 스냅샷 경합·읽기전용 오인 방지)
+      if(await V.canWrite()){ V.writable=true; ready=true; statusEl().innerHTML=OKSTAT+dotWarn(); }
+      else writeGateUI();
+    }
+    function dotWarn(){ return V.dotOK===false?' <span class="warn" style="font-size:11px">(.agent 접근 차단 — 약점·시험 연동은 서버 모드에서만)</span>':''; }
+    function writeGateUI(){
+      ready=false; V.writable=false;
+      statusEl().innerHTML='<span class="warn">읽기 전용(쓰기 미허용) — 열람만 가능</span> <button class="b" id="rwBtn" style="border-color:var(--accent);color:var(--accent);font-weight:600">쓰기 허용</button>';
+      document.getElementById('rwBtn').onclick=async function(){
+        try{
+          if(await V.requestWrite()){ V.writable=true; ready=true; statusEl().innerHTML=OKSTAT+dotWarn(); return; }
+          // 쓰기 프롬프트가 거부 고정된 경우 → 곧바로 폴더 재선택(버튼 클릭 제스처 유지 중에 픽커 오픈)
+          await V.forget();
+          if(await V.reconnect()) await onConnected();
+        }catch(e){ if(e&&e.name!=='AbortError') alert('쓰기 권한 요청 실패: '+(e&&e.message||e)); }
+      };
+    }
+    V.autoConnect().then(ok=>{ if(ok) return onConnected(); connectBtn('볼트 연결'); })
+      .catch(()=>connectBtn('볼트 연결'));
+  }
+})();
+</script>
+</body>
+</html>

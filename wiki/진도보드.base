@@ -1,0 +1,86 @@
+filters:
+  and:
+    - note.type == "쟁점"
+properties:
+  과목:
+    displayName: 과목
+  대분류:
+    displayName: 대분류
+  중분류:
+    displayName: 중분류
+  논점:
+    displayName: 논점
+  진도:
+    displayName: 진도
+  회독:
+    displayName: 회독
+  선택:
+    displayName: 선택
+  사례:
+    displayName: 사례
+  기록:
+    displayName: 기록
+  약점:
+    displayName: 약점
+  최근복습:
+    displayName: 최근복습
+views:
+  - type: table
+    name: 목차순(과목·대분류)
+    groupBy:
+      property: 과목
+      direction: ASC
+    order:
+      - 과목
+      - 대분류
+      - 논점
+      - 진도
+      - 회독
+      - 약점
+    sort:
+      - property: 진도
+        direction: DESC
+      - property: 약점
+        direction: ASC
+      - property: 회독
+        direction: ASC
+      - property: 대분류
+        direction: ASC
+  - type: table
+    name: 대분류별
+    groupBy:
+      property: 대분류
+      direction: ASC
+    order:
+      - 논점
+      - 진도
+      - 회독
+      - 약점
+  - type: table
+    name: 약점
+    filters:
+      and:
+        - note.약점 == true
+    order:
+      - 과목
+      - 대분류
+      - 논점
+      - 최근복습
+  - type: table
+    name: 미착수
+    filters:
+      and:
+        - note.진도 == "미착수"
+    order:
+      - 과목
+      - 대분류
+      - 논점
+  - type: table
+    name: 회독진행
+    filters:
+      and:
+        - note.회독 > 0
+    order:
+      - 과목
+      - 회독
+      - 논점
