@@ -68,7 +68,7 @@ def scan_cards(cards_dir):
         h3 = len(re.findall(r"^### ", t, re.M))
         h2 = len(re.findall(r"^## ", t, re.M))
         stub = bool(re.search(r"low yield|카드화 대상 본문 없음", t))
-        ledger = "감사 대장" in t and h3 == 0
+        ledger = h3 == 0 and re.search(r"감사 대장|중복 제거 대장|신규 카드: 없음", t) is not None
         est = 0 if stub or ledger else (h3 if h3 else h2)
         fmt = ("스텁(low yield)" if stub else
                "감사대장(신규0)" if ledger else
