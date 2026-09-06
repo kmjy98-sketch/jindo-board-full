@@ -59,17 +59,24 @@ WIKI_SUBJECTS = [
 CARD_KEYWORDS = {
     "민법": ["논점민법재산법", "민사사례연습", "민사례", "사례연습_가족", "사례연습_담보",
             "사례연습_물권", "사례연습_민총", "사례연습_채권", "신민사법선택형",
-            "쟁점노트_가족법", "쟁점노트_재산법", "찌라시_민법"],
-    "민사소송법": ["논점민소", "쟁점노트_소송집행", "찌라시_민사소송법"],
-    "민사집행법": ["기초법리집행법", "쟁점노트_소송집행", "찌라시_민사집행"],
-    "형법총론": ["compact형총", "김기용형총", "반반형법", "찌라시_형법"],
-    "형법각론": ["작은변사기", "반반형법", "찌라시_형법"],
+            "쟁점노트_가족법", "쟁점노트_재산법", "찌라시_민법",
+            "컴민법", "포섭트리거_민법", "사례풀이순서_민법"],
+    "민사소송법": ["논점민소", "쟁점노트_소송집행", "찌라시_민사소송법",
+              "민소사례", "포섭트리거_민사소송법", "사례풀이순서_민사소송법"],
+    "민사집행법": ["기초법리집행법", "쟁점노트_소송집행", "찌라시_민사집행", "논점민사집행법"],
+    "형법총론": ["compact형총", "김기용형총", "반반형법", "찌라시_형법",
+             "포섭트리거_형법총론", "사례풀이순서_형법총론"],
+    "형법각론": ["작은변사기", "반반형법", "찌라시_형법",
+             "포섭트리거_형법각론", "사례풀이순서_형법각론"],
     "형사소송법": ["찌라시_형사소송법"],
-    "헌법": ["강성민OX", "유니온헌법기출", "해커스헌법사례", "헌법핵심정리300", "찌라시_헌법"],
+    "헌법": ["강성민OX", "유니온헌법기출", "해커스헌법사례", "헌법핵심정리300", "찌라시_헌법",
+           "포섭트리거_헌법", "사례풀이순서_헌법"],
     "상법": ["찌라시_상법"],
-    "행정법": ["찌라시_행정법"],
+    "행정법": ["찌라시_행정법", "행정법강해"],
     "선택법": ["법조윤리"],
 }
+# (2026-09-06) 키워드 누락으로 과목단위 폴백에서 빠지던 77파일(행정법강해 47·컴민법 14·민소사례 7·
+#  포섭트리거 5·사례풀이순서 4) 추가. 행정법 드릴은 종전엔 찌라시 1파일만 보였다.
 _SUBJ_NORM = {"민사": "민법", "공법": "헌법", "법조윤리": "선택법",
               "형법": "형법총론"}  # frontmatter 과목 정규화
 
@@ -318,26 +325,39 @@ _PAGE_RE = re.compile(r"_p0*(\d+)-0*(\d+)")
 
 def _원문_to_card_paths(원문):
     """원문 경로 → 매칭 카드 파일 후보 목록.
-    원문: 'outputs/01_ocr_llamaparse/{책}_llamaparse_p{s}-{e}.md'
-    카드: 'outputs/02_cards_v37/{책}_llamaparse_p{s}-{e}*_v37.md' (glob)
+    원문: 'outputs/01_ocr_llamaparse/{책}_llamaparse_p{s}-{e}.md' (뒤에 ' (p.N)' 주석·', ' 다중 경로 허용)
+    카드: 'outputs/02_cards_v37/{책}[_llamaparse]_p{s}-{e}*_v37.md'
+    1차 같은 페이지 범위 glob → 2차 같은 책에서 페이지 구간이 겹치는 파일 → 3차 책 prefix 앞 3개.
+    (2026-09-06 수정: 종전 코드는 basename에 원문 전체 문자열의 오프셋을 적용해 book_part가
+     파일명 전체가 되어 glob이 항상 실패 → 사실상 전 논점이 과목단위 폴백으로 떨어졌다.)
     """
     if not 원문:
         return []
     m = _PAGE_RE.search(원문)
     if not m:
         return []
-    # 원문 파일명에서 책 이름 추출
-    base = os.path.basename(원문)
-    book_part = base[:m.start()]  # e.g. "쟁점노트_재산법_llamaparse"
-    page_part = m.group(0)        # e.g. "_p481-510"
-    # glob: 같은 책·페이지 범위의 카드 파일
-    pattern = os.path.join(CARDS, f"{book_part}{page_part}*_v37.md")
-    hits = glob.glob(pattern)
+    # 다중 경로·괄호 주석 대비: 첫 파일명만 사용. 오프셋은 basename 기준으로 다시 계산.
+    base = os.path.basename(원문[:m.end()])
+    mb = _PAGE_RE.search(base)
+    if not mb:
+        return []
+    book_part = base[:mb.start()]          # e.g. "쟁점노트_재산법_llamaparse"
+    page_part = mb.group(0)                # e.g. "_p481-510"
+    s, e = int(mb.group(1)), int(mb.group(2))
+    book_glob = book_part.replace("_llamaparse", "*")   # 카드 파일명의 llamaparse 유무 허용
+    # 1차: 같은 책·같은 페이지 범위
+    hits = glob.glob(os.path.join(CARDS, f"{book_glob}{page_part}*_v37.md"))
     if not hits:
-        # 페이지 없는 폴백: 책 이름 prefix 매칭
-        pattern2 = os.path.join(CARDS, f"{book_part}*_v37.md")
-        hits = glob.glob(pattern2)[:3]
-    return sorted(hits)
+        # 2차: 같은 책에서 페이지 구간이 겹치는 카드 파일(행정법강해처럼 A번호 단위로 잘린 책)
+        book_prefix = book_part.replace("_llamaparse", "")
+        for fp in glob.glob(os.path.join(CARDS, f"{book_prefix}*_v37.md")):
+            mm = _PAGE_RE.search(os.path.basename(fp))
+            if mm and int(mm.group(1)) <= e and int(mm.group(2)) >= s:
+                hits.append(fp)
+    if not hits:
+        # 3차: 책 이름 prefix 폴백(페이지 부정확 — 브리프에 과목단위로 표기됨)
+        hits = glob.glob(os.path.join(CARDS, f"{book_glob}*_v37.md"))[:3]
+    return sorted(set(hits))
 
 
 def attach_sources(targets):

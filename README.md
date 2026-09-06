@@ -19,10 +19,11 @@ skills/              # 엔진 = Claude Code 스킬 3종
   ├─ daily-drill/         # 일일 드릴(2트랙): build_session·log_result·mark_progress
   ├─ spaced-repetition/   # SM-2 SRS: srs_scheduler
   └─ anki-card-generation/# 카드 → apkg 소비: consume_graduated
-cards/               # 암기장 카드 408개 (outputs/02_cards_v37 스냅샷)
+cards/               # 암기장 카드 409개 (outputs/02_cards_v37 스냅샷)
 state/               # learning.json(약점·시험·SRS) · srs_log · srs_events · drill_log
 wiki/                # 논점 frontmatter = 진도 정본 + 사례노트 + MOC (sync/위키 스냅샷)
-docs/                # 사용설명서
+docs/                # 사용설명서 · 카드현황_핸드오프_2026-09-05.md(카드 자산 검토·인수인계)
+tools/               # card_inventory.py — cards/·wiki/·state/ 스캔 → 카드 현황 표 출력
 ```
 
 ## 🔄 닫힌 루프
